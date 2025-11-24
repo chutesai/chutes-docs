@@ -6,7 +6,7 @@ Welcome to the complete documentation for the **Chutes SDK** - a powerful Python
 
 Chutes is a serverless AI compute platform that allows you to:
 
-- 🚀 Deploy AI models and applications instantly
+- 🚀 Deploy AI models and applications instantly!
 - 💰 Pay only for GPU time you actually use
 - 🔧 Build custom Docker images or use pre-built templates
 - 📊 Scale automatically based on demand
