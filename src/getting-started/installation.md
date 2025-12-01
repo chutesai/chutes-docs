@@ -151,7 +151,7 @@ async with aiohttp.ClientSession() as session:
         data = await resp.json()
 ```
 
-## Developer Deposit (Optional)
+<!-- ## Developer Deposit (Optional)
 
 To create and deploy your own chutes and images, you'll need to make a developer deposit. This is a refundable security deposit to prevent spam.
 
@@ -177,7 +177,7 @@ curl -XPOST https://api.chutes.ai/return_developer_deposit \
   -H 'content-type: application/json' \
   -H 'authorization: Basic cpk_your_api_key' \
   -d '{"address": "your-deposit-address"}'
-```
+``` -->
 
 ## IDE Setup
 
@@ -191,10 +191,10 @@ For the best development experience with VS Code:
 
 ```json
 {
-	"python.linting.enabled": true,
-	"python.linting.pylintEnabled": true,
-	"python.formatting.provider": "black",
-	"python.analysis.typeCheckingMode": "basic"
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.formatting.provider": "black",
+  "python.analysis.typeCheckingMode": "basic"
 }
 ```
 
