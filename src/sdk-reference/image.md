@@ -476,22 +476,22 @@ image = (
     Image(username="myuser", name="pytorch-app", tag="1.0",
           readme="## PyTorch Application\nOptimized for GPU inference.")
     .from_base("parachutes/python:3.12")
-    
+
     # System dependencies
     .apt_install(["git", "curl", "ffmpeg"])
-    
+
     # Python packages
     .run_command("""
         pip install --upgrade pip &&
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 &&
         pip install transformers accelerate datasets tokenizers
     """)
-    
+
     # Environment optimization
     .with_env("PYTHONUNBUFFERED", "1")
     .with_env("TRANSFORMERS_CACHE", "/opt/models")
     .with_env("TORCH_BACKENDS_CUDNN_BENCHMARK", "1")
-    
+
     # Application code
     .add("requirements.txt", "/app/requirements.txt")
     .run_command("pip install -r /app/requirements.txt")
@@ -506,7 +506,7 @@ image = (
 image = (
     Image(username="myuser", name="audio-processor", tag="1.0")
     .from_base("parachutes/python:3.12")
-    
+
     # Audio processing dependencies
     .apt_install([
         "ffmpeg",
@@ -514,12 +514,12 @@ image = (
         "libportaudio2",
         "libsox-fmt-all"
     ])
-    
+
     # Python audio libraries
     .run_command("""
         pip install soundfile librosa pydub torchaudio
     """)
-    
+
     .add("src/", "/app/src/")
     .set_workdir("/app")
 )
@@ -534,17 +534,17 @@ For faster builds, order your directives from least to most frequently changing:
 image = (
     Image("myuser", "myapp", "1.0")
     .from_base("parachutes/python:3.12")
-    
+
     # 1. System packages (rarely change)
     .apt_install(["git", "curl"])
-    
+
     # 2. Python dependencies from requirements (change occasionally)
     .add("requirements.txt", "/tmp/requirements.txt")
     .run_command("pip install -r /tmp/requirements.txt")
-    
+
     # 3. Application code (changes frequently)
     .add("src/", "/app/src/")
-    
+
     .set_workdir("/app")
 )
 
