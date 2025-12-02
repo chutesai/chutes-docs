@@ -38,7 +38,7 @@ chutes register [OPTIONS]
 
 - `--config-path TEXT`: Custom path to config file
 - `--username TEXT`: Desired username
-- `--wallets-path TEXT`: Path to Bittensor wallets directory
+- `--wallets-path TEXT`: Path to Bittensor wallets directory (default: `~/.bittensor/wallets`)
 - `--wallet TEXT`: Name of the wallet to use
 - `--hotkey TEXT`: Hotkey to register with
 
@@ -46,14 +46,6 @@ chutes register [OPTIONS]
 
 ```bash
 chutes register --username myuser
-```
-
-### `chutes link`
-
-Link a validator or subnet owner hotkey to your account for free developer access.
-
-```bash
-chutes link [OPTIONS]
 ```
 
 ## Building & Deployment
@@ -76,7 +68,7 @@ chutes build <chute_ref> [OPTIONS]
 - `--logo TEXT`: Path to logo image
 - `--local`: Build locally instead of remotely
 - `--debug`: Enable debug logging
-- `--include-cwd`: Include entire current directory
+- `--include-cwd`: Include entire current directory in build context
 - `--wait`: Wait for build to complete
 - `--public`: Mark image as public
 
@@ -89,7 +81,7 @@ chutes build my_chute:chute --wait
 # Build locally for testing
 chutes build my_chute:chute --local
 
-# Build with a logo
+# Build with a logo and make public
 chutes build my_chute:chute --logo ./logo.png --public
 ```
 
@@ -111,6 +103,7 @@ chutes deploy <chute_ref> [OPTIONS]
 - `--logo TEXT`: Path to logo image
 - `--debug`: Enable debug logging
 - `--public`: Mark chute as public
+- `--accept-fee`: Acknowledge the deployment fee and accept being charged
 
 **Examples:**
 
@@ -121,8 +114,8 @@ chutes deploy my_chute:chute
 # Deploy with logo
 chutes deploy my_chute:chute --logo ./logo.png
 
-# Deploy as public chute
-chutes deploy my_chute:chute --public
+# Deploy and accept the deployment fee
+chutes deploy my_chute:chute --accept-fee
 ```
 
 ### `chutes run`
@@ -148,13 +141,58 @@ chutes run <chute_ref> [OPTIONS]
 
 ```bash
 # Run on default port
-chutes run my_chute:chute
+chutes run my_chute:chute --dev
 
 # Run on custom port with debug
-chutes run my_chute:chute --port 8080 --debug
+chutes run my_chute:chute --port 8080 --debug --dev
+```
 
-# Development mode
-chutes run my_chute:chute --dev
+### `chutes share`
+
+Share a chute with another user.
+
+```bash
+chutes share [OPTIONS]
+```
+
+**Options:**
+
+- `--chute-id TEXT`: The chute UUID or name to share (required)
+- `--user-id TEXT`: The user UUID or username to share with (required)
+- `--config-path TEXT`: Custom config path
+- `--remove`: Unshare/remove the share instead of adding
+
+**Examples:**
+
+```bash
+# Share a chute with another user
+chutes share --chute-id my-chute --user-id anotheruser
+
+# Remove sharing
+chutes share --chute-id my-chute --user-id anotheruser --remove
+```
+
+### `chutes warmup`
+
+Warm up a chute to ensure an instance is ready for requests.
+
+```bash
+chutes warmup <chute_id_or_ref> [OPTIONS]
+```
+
+**Arguments:**
+
+- `chute_id_or_ref`: The chute UUID, name, or file reference (format: `filename:chutevarname`)
+
+**Options:**
+
+- `--config-path TEXT`: Custom config path
+- `--debug`: Enable debug logging
+
+**Example:**
+
+```bash
+chutes warmup my-chute
 ```
 
 ## Resource Management
@@ -227,8 +265,8 @@ chutes images list [OPTIONS]
 **Options:**
 
 - `--name TEXT`: Filter by name
-- `--limit INTEGER`: Number of items per page
-- `--page INTEGER`: Page number
+- `--limit INTEGER`: Number of items per page (default: 25)
+- `--page INTEGER`: Page number (default: 0)
 - `--include-public`: Include public images
 
 #### `chutes images get`
@@ -262,12 +300,14 @@ chutes keys create [OPTIONS]
 **Options:**
 
 - `--name TEXT`: Name for the API key (required)
-- `--admin`: Grant admin access
-- `--images`: Grant access to images
-- `--chutes`: Grant access to chutes
-- `--image-ids TEXT`: Specific image IDs to allow
-- `--chute-ids TEXT`: Specific chute IDs to allow
+- `--admin`: Create admin key with full permissions
+- `--images`: Allow full access to images
+- `--chutes`: Allow full access to chutes
+- `--image-ids TEXT`: Specific image IDs to allow (can be repeated)
+- `--chute-ids TEXT`: Specific chute IDs to allow (can be repeated)
 - `--action [read|write|delete|invoke]`: Specify action scope
+- `--json-input TEXT`: Provide raw scopes document as JSON for advanced usage
+- `--config-path TEXT`: Custom config path
 
 **Examples:**
 
@@ -275,11 +315,11 @@ chutes keys create [OPTIONS]
 # Admin key
 chutes keys create --name admin-key --admin
 
-# Read-only access to specific chute
-chutes keys create --name readonly-key --chute-ids 12345 --action read
+# Key with invoke access to all chutes
+chutes keys create --name invoke-key --chutes --action invoke
 
-# Image management key
-chutes keys create --name image-key --images
+# Key with access to specific chute
+chutes keys create --name readonly-key --chute-ids 12345 --action read
 ```
 
 #### `chutes keys list`
@@ -289,6 +329,12 @@ List your API keys.
 ```bash
 chutes keys list [OPTIONS]
 ```
+
+**Options:**
+
+- `--name TEXT`: Filter by name
+- `--limit INTEGER`: Number of items per page (default: 25)
+- `--page INTEGER`: Page number (default: 0)
 
 #### `chutes keys get`
 
@@ -304,6 +350,60 @@ Delete an API key.
 
 ```bash
 chutes keys delete <name_or_id>
+```
+
+### `chutes secrets`
+
+Manage secrets for your chutes (e.g., HuggingFace tokens for private models).
+
+#### `chutes secrets create`
+
+Create a new secret.
+
+```bash
+chutes secrets create [OPTIONS]
+```
+
+**Options:**
+
+- `--purpose TEXT`: The chute UUID or name this secret is for (required)
+- `--key TEXT`: The secret key/name (required)
+- `--value TEXT`: The secret value (required)
+- `--config-path TEXT`: Custom config path
+
+**Example:**
+
+```bash
+chutes secrets create --purpose my-chute --key HF_TOKEN --value hf_xxxxxxxxxxxx
+```
+
+#### `chutes secrets list`
+
+List your secrets.
+
+```bash
+chutes secrets list [OPTIONS]
+```
+
+**Options:**
+
+- `--limit INTEGER`: Number of items per page (default: 25)
+- `--page INTEGER`: Page number (default: 0)
+
+#### `chutes secrets get`
+
+Get details about a specific secret.
+
+```bash
+chutes secrets get <secret_id>
+```
+
+#### `chutes secrets delete`
+
+Delete a secret.
+
+```bash
+chutes secrets delete <secret_id>
 ```
 
 ## Utilities
@@ -332,15 +432,6 @@ These options work with most commands:
 - `--config-path TEXT`: Path to custom config file
 - `--debug`: Enable debug logging
 
-## Exit Codes
-
-The CLI uses standard exit codes:
-
-- `0`: Success
-- `1`: General error
-- `2`: Argument error
-- `130`: Interrupted by user (Ctrl+C)
-
 ## Configuration
 
 ### Config File Location
@@ -357,7 +448,6 @@ export CHUTES_CONFIG_PATH=/path/to/config.ini
 
 - `CHUTES_CONFIG_PATH`: Custom config file path
 - `CHUTES_API_URL`: API base URL
-- `CHUTES_DEV_URL`: Development server URL
 - `CHUTES_ALLOW_MISSING`: Allow missing config
 
 ## Common Workflows
@@ -379,10 +469,10 @@ chutes keys create --name admin --admin
 chutes build my_app:chute --wait
 
 # Test locally
-chutes run my_app:chute --dev
+docker run --rm -it -e CHUTES_EXECUTION_CONTEXT=REMOTE -p 8000:8000 my_app:tag chutes run my_app:chute --port 8000 --dev
 
 # Deploy to production
-chutes deploy my_app:chute
+chutes deploy my_app:chute --accept-fee
 ```
 
 ### 3. Manage Resources
@@ -394,8 +484,11 @@ chutes chutes list
 # Get detailed info
 chutes chutes get my-app
 
-# Check logs via dashboard
-# (Visit https://chutes.ai)
+# Warm up a chute
+chutes warmup my-app
+
+# Share with another user
+chutes share --chute-id my-app --user-id colleague
 
 # Clean up old resources
 chutes chutes delete old-chute
@@ -439,8 +532,9 @@ python -c "from my_app import chute; print(chute.image)"
 **Deployment issues**
 
 ```bash
-# Verify image exists
+# Verify image exists and is built
 chutes images list --name my-image
+chutes images get my-image
 
 # Check chute status
 chutes chutes get my-chute
@@ -451,14 +545,7 @@ chutes chutes get my-chute
 Enable debug logging for detailed output:
 
 ```bash
-chutes --debug <command>
-```
-
-Or set environment variable:
-
-```bash
-export CHUTES_DEBUG=1
-chutes <command>
+chutes build my_app:chute --debug
 ```
 
 ## Getting Help
@@ -479,79 +566,7 @@ chutes chutes list --help
 
 - 📖 **Documentation**: [Complete Docs](/docs)
 - 💬 **Discord**: [Community Chat](https://discord.gg/wHrXwWkCRz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
-- 📧 **Email**: `support@chutes.ai`
-
-## Advanced Usage
-
-### Scripting and Automation
-
-The CLI is designed for scripting:
-
-```bash
-#!/bin/bash
-set -e
-
-echo "Building and deploying my chute..."
-
-# Build
-chutes build my_app:chute --wait || exit 1
-
-# Deploy
-chutes deploy my_app:chute || exit 1
-
-# Verify deployment
-chutes chutes get my-app
-
-echo "Deployment successful!"
-```
-
-### JSON Output
-
-Many commands support JSON output for programmatic use:
-
-```bash
-# Get chute info as JSON
-chutes chutes get my-chute --format json
-
-# List chutes with jq processing
-chutes chutes list --format json | jq '.items[].name'
-```
-
-### CI/CD Integration
-
-Example GitHub Actions workflow:
-
-```yaml
-name: Deploy Chute
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
-
-      - name: Install Chutes
-        run: pip install chutes
-
-      - name: Configure Chutes
-        run: |
-          mkdir -p ~/.chutes
-          echo "${{ secrets.CHUTES_CONFIG }}" > ~/.chutes/config.ini
-
-      - name: Deploy
-        run: |
-          chutes build my_app:chute --wait
-          chutes deploy my_app:chute
-```
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes/issues)
 
 ---
 
