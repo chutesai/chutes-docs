@@ -20,7 +20,6 @@ from chutes.chute.template.vllm import build_vllm_chute
 chute = build_vllm_chute(
     username="your-username",  # Replace with your Chutes username
     model_name="microsoft/DialoGPT-medium",
-    revision="main",  # Required: locks model to specific version
     node_selector=NodeSelector(
         gpu_count=1,
         min_vram_gb_per_gpu=16
@@ -261,11 +260,11 @@ A: Check the logs in the [Chutes Dashboard](https://chutes.ai) or use the CLI: `
 
 ## Get Help
 
-- 📖 **Detailed Guides**: Continue with [Your First Custom Chute](/docs/getting-started/first-chute)
+- 📖 **Detailed Guides**: Continue with [Your First Custom Chute](first-chute)
 - 💬 **Community**: [Join our Discord](https://discord.gg/wHrXwWkCRz)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
 - 📧 **Support**: `support@chutes.ai`
 
 ---
 
-Ready to build something more advanced? Check out [Your First Custom Chute](/docs/getting-started/first-chute) to learn how to build completely custom applications!
+Ready to build something more advanced? Check out [Your First Custom Chute](first-chute) to learn how to build completely custom applications!

@@ -20,6 +20,8 @@ pip install chutes
 
 ### Option 2: Install from Source
 
+If you want the latest development features:
+
 ```bash
 git clone https://github.com/rayonlabs/chutes.git
 cd chutes
@@ -52,7 +54,7 @@ Visit [chutes.ai](https://chutes.ai) and create an account. The platform will au
 
 If you prefer to manage your own wallet:
 
-1. Install Bittensor (older version required):
+1. Install Bittensor (older version recommended for compatibility/ease of install):
 
    ```bash
    pip install 'bittensor<8'
@@ -151,34 +153,6 @@ async with aiohttp.ClientSession() as session:
         data = await resp.json()
 ```
 
-<!-- ## Developer Deposit (Optional)
-
-To create and deploy your own chutes and images, you'll need to make a developer deposit. This is a refundable security deposit to prevent spam.
-
-### Check Required Deposit
-
-```bash
-curl -s https://api.chutes.ai/developer_deposit | jq .
-```
-
-### Get Your Deposit Address
-
-```bash
-curl -s https://api.chutes.ai/users/me \
-  -H 'authorization: Basic cpk_your_api_key'
-```
-
-### Return Your Deposit
-
-After 7 days, you can request your deposit back:
-
-```bash
-curl -XPOST https://api.chutes.ai/return_developer_deposit \
-  -H 'content-type: application/json' \
-  -H 'authorization: Basic cpk_your_api_key' \
-  -d '{"address": "your-deposit-address"}'
-``` -->
-
 ## IDE Setup
 
 ### VS Code
@@ -235,7 +209,7 @@ For PyCharm users:
 
 If you encounter issues:
 
-1. Check the [FAQ](/docs/help/faq)
+1. Check the [FAQ](../help/faq)
 2. Search existing [GitHub issues](https://github.com/rayonlabs/chutes/issues)
 3. Join our [Discord community](https://discord.gg/wHrXwWkCRz)
 4. Email `support@chutes.ai`
@@ -244,10 +218,10 @@ If you encounter issues:
 
 Now that you have Chutes installed and configured:
 
-1. **[Quick Start Guide](/docs/getting-started/quickstart)** - Deploy your first chute in minutes
-2. **[Your First Chute](/docs/getting-started/first-chute)** - Build a complete application from scratch
-3. **[Core Concepts](/docs/core-concepts/chutes)** - Understand the fundamentals
+1. **[Quick Start Guide](quickstart)** - Deploy your first chute in minutes
+2. **[Your First Chute](first-chute)** - Build a complete application from scratch
+3. **[Core Concepts](../core-concepts/chutes)** - Understand the fundamentals
 
 ---
 
-Ready to build something amazing? Let's move on to the [Quick Start Guide](/docs/getting-started/quickstart)!
+Ready to build something amazing? Let's move on to the [Quick Start Guide](quickstart)!

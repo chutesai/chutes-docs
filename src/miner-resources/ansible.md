@@ -10,19 +10,10 @@ It's quite trivial to use a different network for wireguard, or even just a diff
 
 To use a different range, simply update these four files:
 
-1. `join-cluster.yml` contains a regex to search for the proper network join command, needs to be updated if not using 192.168\*
-2. `templates/wg0-worker.conf.j2` specifies 192.168.0.0/20 for the wireguard network, you can change this or restrict it, e.g. `192.168.254.0/24` or use an entirely different private network like `10.99.0.0/23` or whatever, just be cognizant of your CIDR
-3. `templates/wg0-primary.conf.j2` ditto with the worker config, CIDRs must match
-4. `inventory.yml` obviously your hosts will ned the updated wireguard_ip values to match
+1. `ansible/k3s/inventory.yml` your hosts will need the updated `wireguard_ip` values to match
+2. `ansible/k3s/group_vars/all.yml` (or similar, depending on repo structure) usually defines the wireguard network. Check the variable `wireguard_network` or similar if exposed.
 
-I would NOT recommend changing the wireguard network if you are already running, unless you absolutely need to. And if you do, the best bet is to actually completely wipe microk8s and start over with running each of wireguard, site, and extras playbooks, meaning you'd have to:
-
-1. `chutes-miner scorch-remote ...` to purge all instances/GPUs from the validator
-2. `sudo snap remove microk8s` on each node, GPU and CPU
-3. Re-install all the things.
-4. Re-add all the nodes.
-
-There are three main private networks you could use: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, and you can sometimes get away with using the carrier NAT range 100.64.0.0/10. Those are HUGE IP ranges and you can almost certainly get away with using a /24, unless you plan to add more than 256 nodes to your miner. /23 doubles, /22 doubles that, etc. Just pick a range that's unlikely to be used, or check servers on your server provider of choice before making a selection.
+I would NOT recommend changing the wireguard network if you are already running, unless you absolutely need to. And if you do, the best bet is to actually completely wipe the node and start over.
 
 #### external_ip
 
@@ -93,7 +84,14 @@ ssh_args = -o ControlMaster=auto -o ControlPersist=2m
 
 ## 3. Update inventory configuration
 
-Using your favorite text editor (vim of course), edit inventory.yml to suite your needs.
+Clone the repository:
+
+```bash
+git clone https://github.com/chutesai/chutes-miner.git
+cd chutes-miner/ansible/k3s
+```
+
+Using your favorite text editor (vim of course), edit `inventory.yml` to suite your needs.
 
 For example:
 
@@ -102,8 +100,8 @@ all:
   vars:
     # List of SSH public keys, e.g. cat ~/.ssh/id_rsa.pub
     ssh_keys:
-      - 'ssh-rsa AAAA... user@hostname'
-      - 'ssh-rsa BBBB... user2@hostname2'
+      - "ssh-rsa AAAA... user@hostname"
+      - "ssh-rsa BBBB... user2@hostname2"
     # The username you want to use to login to those machines (and your public key will be added to).
     user: billybob
     # The initial username to login with, for fresh nodes that may not have your username setup.
@@ -117,18 +115,26 @@ all:
     # The port you'll be using for the registry proxy, MUST MATCH chart/values.yaml registry.service.nodePort!
     registry_port: 30500
     # SSH sometimes just hangs without this...
-    ansible_ssh_common_args: '-o ControlPath=none'
+    ansible_ssh_common_args: "-o ControlPath=none"
     # SSH retries...
     ansible_ssh_retries: 3
     # Ubuntu major/minor version.
-    ubuntu_major: '22'
-    ubuntu_minor: '04'
+    ubuntu_major: "22"
+    ubuntu_minor: "04"
     # CUDA version - leave as-is unless using h200s, in which case either use 12-5 or skip_cuda: true (if provider already pre-installed drivers)
-    cuda_version: '12-6'
+    cuda_version: "12-6"
     # NVIDA GPU drivers - leave as-is unless using h200s, in which case it would be 555
-    nvidia_version: '560'
+    nvidia_version: "560"
     # Flag to skip the cuda install entirely, if the provider already has cuda 12.x+ installed (note some chutes will not work unless 12.6+)
     skip_cuda: false
+
+    # PATH TO YOUR HOTKEY FILE
+    # This is used to create the miner-credentials secret in k8s automatically
+    hotkey_path: ~/.bittensor/wallets/default/hotkeys/my-hotkey
+
+    # Setup local kubeconfig?
+    # If true, it will copy the kubeconfig from the primary node to your local machine
+    setup_local_kubeconfig: true
 
   hosts:
     # This would be the main node, which runs postgres, redis, gepetto, etc.
@@ -147,27 +153,15 @@ all:
       wireguard_ip: 192.168.0.3
 ```
 
-## 4. Connect networks via wireguard
+## 4. Run the playbook
 
-```bash
-ansible-playbook -i inventory.yml wireguard.yml
-```
-
-## 5. Bootstrap!
+This playbook handles wireguard setup, k3s installation, and joining nodes to the cluster.
 
 ```bash
 ansible-playbook -i inventory.yml site.yml
 ```
 
-## 6. Join the kubernetes nodes together
-
-If you have more than one host, make sure they are all part of the same cluster:
-
-```bash
-ansible-playbook -i inventory.yml join-cluster.yml
-```
-
-## 7. Install 3rd party helm charts
+## 5. Install 3rd party helm charts
 
 This step will install nvidia GPU operator and prometheus on your servers.
 
@@ -179,22 +173,18 @@ ansible-playbook -i inventory.yml extras.yml
 
 ## To add a new node, after the fact
 
-First, update your inventory.yml with the new host configuration.
+First, update your `inventory.yml` with the new host configuration.
 
-Then, add the node to your wireguard network:
+Then, run the site playbook with `--limit` to target only the new node (and the primary, as it's needed for coordination/token generation usually, though specific instructions may vary, running on all is safest but slower).
 
 ```bash
-ansible-playbook -i inventory.yml wireguard.yml
+ansible-playbook -i inventory.yml site.yml --limit chutes-h200-0,chutes-miner-cpu-0
 ```
 
-Then, run the site playbook with `--limit {hostname}`, e.g.:
+(Including the primary node ensures that if any coordination is needed, it is available).
+
+Then run extras on the new node:
 
 ```bash
-ansible-playbook -i inventory.yml site.yml --limit chutes-h200-0
-```
-
-Then, join the new node to the cluster (DO NOT USE `--limit` HERE!):
-
-```bash
-ansible-playbook -i inventory.yml join-cluster.yml
+ansible-playbook -i inventory.yml extras.yml --limit chutes-h200-0
 ```
