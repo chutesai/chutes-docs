@@ -21,19 +21,16 @@ from chutes.image import Image
 
 # Use compatible base images
 image = Image(
-    base_image="nvidia/cuda:12.1-devel-ubuntu22.04",
-    python_version="3.11"
-)
+    username="myuser",
+    name="my-image",
+    tag="1.0"
+).from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
 
 # Specify compatible package versions
-image.pip_install([
-    "torch==2.1.0",
-    "torchvision==0.16.0",
-    "--extra-index-url https://download.pytorch.org/whl/cu121"
-])
+image.run_command("pip install torch>=2.4.0 torchvision --index-url https://download.pytorch.org/whl/cu124")
 
 # Alternative: Use conda for complex dependencies
-image.run_command("conda install pytorch torchvision pytorch-cuda=12.1 -c pytorch -c nvidia")
+image.run_command("conda install pytorch torchvision pytorch-cuda=12.4 -c pytorch -c nvidia")
 ```
 
 #### Docker Build Context Issues
@@ -76,13 +73,14 @@ Permission denied: '/usr/local/bin/pip'
 
 ```python
 # Run commands as root when needed
-image.run_command("apt-get update && apt-get install -y curl", user="root")
+image.set_user("root")
+image.run_command("apt-get update && apt-get install -y curl")
 
 # Set proper ownership
-image.run_command("chown -R chutes:chutes /app", user="root")
+image.run_command("chown -R chutes:chutes /app")
 
 # Use USER directive correctly
-image.user("chutes")
+image.set_user("chutes")
 ```
 
 ### Deployment Timeouts
@@ -227,11 +225,7 @@ ValueError: Unsupported model format
 
 ```python
 # Pin compatible versions
-image.pip_install([
-    "transformers==4.36.0",
-    "torch==2.1.0",
-    "safetensors==0.4.0"
-])
+image.run_command("pip install transformers==4.36.0 torch==2.1.0 safetensors==0.4.0")
 
 # Use format conversion
 from transformers import AutoModel
@@ -342,7 +336,7 @@ HTTPException: 401 Unauthorized
 
 ```bash
 # Check API key configuration
-chutes auth status
+chutes account info
 
 # Set API key correctly
 chutes auth login
@@ -440,7 +434,7 @@ if os.getenv("DEBUG_MODE"):
 
 ```python
 import traceback
-from chutes.exception import ChuteException
+from fastapi import HTTPException
 
 @chute.cord(public_api_path="/generate")
 async def generate(self, request: GenerateRequest):
@@ -449,13 +443,13 @@ async def generate(self, request: GenerateRequest):
         return result
     except torch.cuda.OutOfMemoryError:
         self.logger.error("GPU out of memory", exc_info=True)
-        raise ChuteException(
+        raise HTTPException(
             status_code=503,
             detail="Service temporarily unavailable due to memory constraints"
         )
     except Exception as e:
         self.logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        raise ChuteException(
+        raise HTTPException(
             status_code=500,
             detail="Internal server error"
         )
@@ -558,181 +552,3 @@ async def get_task_status(self, task_id: str):
     """Get status of a background task."""
     return get_task_status(task_id)
 ```
-
-## Model Loading Issues
-
-### Download Failures
-
-**Problem**: Model download fails during startup
-
-**Solutions**:
-
-```python
-import os
-import time
-from huggingface_hub import snapshot_download
-
-@chute.on_startup()
-async def setup(self):
-    """Robust model loading with retries."""
-    model_path = "/models/my-model"
-    max_retries = 3
-
-    for attempt in range(max_retries):
-        try:
-            if not os.path.exists(model_path):
-                self.logger.info(f"Downloading model (attempt {attempt + 1}/{max_retries})")
-                snapshot_download(
-                    repo_id="microsoft/DialoGPT-medium",
-                    local_dir=model_path,
-                    resume_download=True,  # Resume partial downloads
-                    timeout=300  # 5 minute timeout
-                )
-
-            self.logger.info("Loading model...")
-            self.model = load_model(model_path)
-            self.logger.info("Model loaded successfully")
-            break
-
-        except Exception as e:
-            self.logger.error(f"Model loading attempt {attempt + 1} failed: {e}")
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(30)  # Wait before retry
-```
-
-### Version Conflicts
-
-**Problem**: Model requires different library versions
-
-**Solutions**:
-
-```python
-# Create version-specific environments
-image.run_command("pip install transformers==4.21.0 --target /app/transformers_old")
-
-# Use specific versions dynamically
-import sys
-import os
-
-@chute.on_startup()
-async def setup(self):
-    # Add specific library version to path
-    sys.path.insert(0, "/app/transformers_old")
-
-    # Now import the specific version
-    import transformers
-    self.logger.info(f"Using transformers version: {transformers.__version__}")
-```
-
-## Common Error Messages and Solutions
-
-### "Module not found" Errors
-
-```bash
-ModuleNotFoundError: No module named 'transformers'
-```
-
-**Solution**: Add missing packages to image
-
-```python
-image.pip_install(["transformers", "torch", "tokenizers"])
-```
-
-### "CUDA device-side assert triggered"
-
-**Solution**: Check tensor dimensions and data types
-
-```python
-# Ensure tensors are on correct device
-inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-# Check for invalid indices
-assert torch.all(input_ids >= 0) and torch.all(input_ids < vocab_size)
-```
-
-### "HTTP 422 Unprocessable Entity"
-
-**Solution**: Validate input schema
-
-```python
-from pydantic import BaseModel, validator
-
-class GenerateRequest(BaseModel):
-    text: str
-    max_length: int = 100
-
-    @validator('text')
-    def text_must_not_be_empty(cls, v):
-        if not v.strip():
-            raise ValueError('Text cannot be empty')
-        return v
-
-    @validator('max_length')
-    def max_length_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError('Max length must be positive')
-        return v
-```
-
-## Getting Help
-
-### Log Analysis
-
-```bash
-# Get recent logs
-chutes chutes logs myuser/my-chute --tail 100
-
-# Follow logs in real-time
-chutes chutes logs myuser/my-chute --follow
-
-# Filter logs by level
-chutes chutes logs myuser/my-chute | grep ERROR
-```
-
-### Diagnostic Commands
-
-```bash
-# Check account status
-chutes auth status
-
-# List deployed chutes
-chutes chutes list
-
-# Get detailed chute information
-chutes chutes get myuser/my-chute
-
-# Check system resources
-chutes chutes metrics myuser/my-chute
-```
-
-### Support Resources
-
-1. **Documentation**: Review relevant guides and API references
-2. **Community**: Join the community forum for peer support
-3. **Support Tickets**: Submit detailed bug reports with:
-   - Full error messages
-   - Relevant code snippets
-   - Log excerpts
-   - System information
-
-### Reporting Issues
-
-When reporting issues, include:
-
-```python
-# System information
-import torch
-import sys
-import platform
-
-print(f"Python version: {sys.version}")
-print(f"PyTorch version: {torch.__version__}")
-print(f"CUDA available: {torch.cuda.is_available()}")
-if torch.cuda.is_available():
-    print(f"CUDA version: {torch.version.cuda}")
-    print(f"GPU count: {torch.cuda.device_count()}")
-print(f"Platform: {platform.platform()}")
-```
-
-This troubleshooting guide should help you resolve most common issues. For persistent problems, don't hesitate to reach out to support with detailed information about your setup and the specific error you're encountering.

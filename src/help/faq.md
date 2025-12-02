@@ -13,7 +13,7 @@ Chutes is a serverless AI compute platform that lets you deploy and scale AI mod
 - Deploy AI models in minutes, not hours
 - Pay only for actual compute time used
 - Automatic scaling from 0 to hundreds of instances
-- Access to latest GPU hardware (H200, MI300X,  B200, etc.)
+- Access to latest GPU hardware (H200, MI300X, B200, etc.)
 - No DevOps or Kubernetes knowledge required
 
 ### How is Chutes different from other platforms?
@@ -94,11 +94,11 @@ No! Chutes handles containerization automatically. However, if you need custom d
 from chutes.image import Image
 
 # Simple dependency installation
-image = Image(
-    base_image="nvidia/cuda:12.1-runtime-ubuntu22.04"
-).run([
-    "pip install transformers torch"
-])
+image = (
+    Image(username="myuser", name="my-app", tag="1.0")
+    .from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
+    .run_command("pip install transformers torch")
+)
 
 chute = Chute(
     username="myuser",
@@ -207,7 +207,7 @@ chute = Chute(username="myuser", name=chute_name)
 
 ```python
 # Use optimized engines
-from chutes.templates import build_vllm_chute
+from chutes.chute.template.vllm import build_vllm_chute
 
 chute = build_vllm_chute(
     username="myuser",
@@ -552,7 +552,7 @@ engine_args = {"max_num_batched_tokens": 1024}
 engine_args = {"gpu_memory_utilization": 0.85}
 ```
 
-See the [Troubleshooting Guide](/docs/help/troubleshooting) for more details.
+See the [Troubleshooting Guide](troubleshooting) for more details.
 
 ### How do I debug performance issues?
 

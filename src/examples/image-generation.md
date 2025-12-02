@@ -171,10 +171,11 @@ from chutes.chute import Chute, NodeSelector
 # Build custom Stable Diffusion image
 image = (
     Image(username="myuser", name="stable-diffusion", tag="2.1")
-    .from_base("nvidia/cuda:11.8-devel-ubuntu22.04")
+    .from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
+    .with_python("3.11")
     .run_command("apt update && apt install -y python3 python3-pip git")
-    .run_command("pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118")
-    .run_command("pip3 install diffusers transformers accelerate")
+    .run_command("pip3 install torch>=2.4.0 torchvision --index-url https://download.pytorch.org/whl/cu124")
+    .run_command("pip3 install diffusers>=0.29.0 transformers>=4.44.0 accelerate>=0.33.0")
     .run_command("pip3 install fastapi uvicorn pydantic pillow")
     .set_workdir("/app")
 )
@@ -214,6 +215,7 @@ async def generate_sdxl(self, prompt: str, width: int = 1024, height: int = 1024
     # Return first image as base64
     buffer = BytesIO()
     images[0].save(buffer, format="PNG")
+    import base64
     return {"image": base64.b64encode(buffer.getvalue()).decode()}
 ```
 
