@@ -10,8 +10,8 @@ from chutes.image import Image
 image = Image(
     username: str,
     name: str,
-    tag: str = "latest",
-    readme: Optional[str] = None
+    tag: str,
+    readme: str = ""
 )
 ```
 
@@ -26,14 +26,12 @@ The username or organization name for the image.
 **Example:**
 
 ```python
-image = Image(username="mycompany", name="custom-ai")
+image = Image(username="mycompany", name="custom-ai", tag="1.0")
 ```
 
 **Rules:**
 
-- Must be lowercase alphanumeric with hyphens
-- Cannot start or end with hyphen
-- Maximum 63 characters
+- Must match pattern `^[a-z0-9][a-z0-9-_\.]*$`
 - Should match your Chutes username
 
 #### `name: str`
@@ -43,36 +41,26 @@ The name of the Docker image.
 **Example:**
 
 ```python
-image = Image(username="mycompany", name="text-processor")
+image = Image(username="mycompany", name="text-processor", tag="1.0")
 ```
 
 **Rules:**
 
-- Must be lowercase alphanumeric with hyphens
-- Cannot start or end with hyphen
-- Maximum 63 characters
+- Must match pattern `^[a-z0-9][a-z0-9-_\.]*$`
 - Should be descriptive of the image purpose
 
-### Optional Parameters
-
-#### `tag: str = "latest"`
+#### `tag: str`
 
 Version tag for the image.
 
 **Examples:**
 
 ```python
-# Default latest tag
-image = Image(username="mycompany", name="ai-model")
-
-# Specific version tag
+# Version tag
 image = Image(username="mycompany", name="ai-model", tag="1.0.0")
 
 # Development tag
 image = Image(username="mycompany", name="ai-model", tag="dev")
-
-# Feature branch tag
-image = Image(username="mycompany", name="ai-model", tag="feature-new-model")
 ```
 
 **Best Practices:**
@@ -81,7 +69,9 @@ image = Image(username="mycompany", name="ai-model", tag="feature-new-model")
 - Use descriptive tags for different environments
 - Avoid using "latest" in production
 
-#### `readme: Optional[str] = None`
+### Optional Parameters
+
+#### `readme: str = ""`
 
 Documentation for the image in Markdown format.
 
@@ -96,11 +86,7 @@ This image contains optimized libraries for AI text processing.
 ## Features
 - PyTorch 2.0 with CUDA support
 - Transformers library
-- Custom preprocessing tools
 - Optimized for GPU inference
-
-## Usage
-This image is designed for text generation workloads.
 """
 
 image = Image(
@@ -111,13 +97,22 @@ image = Image(
 )
 ```
 
-## Core Methods
+## Default Base Image
 
-### Base Image Configuration
+By default, images use `parachutes/python:3.12` as the base image, which includes:
 
-#### `.from_base(base_image: str)`
+- CUDA 12.x support
+- Python 3.12
+- OpenCL libraries
+- Common system dependencies
 
-Set the base Docker image to build from.
+**We highly recommend using this base image** to avoid dependency issues.
+
+## Methods
+
+### `.from_base(base_image: str)`
+
+Replace the base image.
 
 **Signature:**
 
@@ -128,37 +123,23 @@ def from_base(self, base_image: str) -> Image
 **Examples:**
 
 ```python
-# Python base images
-image = Image("myuser", "myapp").from_base("python:3.11-slim")
-image = Image("myuser", "myapp").from_base("python:3.11-bullseye")
+# Use recommended Chutes base image (default)
+image = Image("myuser", "myapp", "1.0").from_base("parachutes/python:3.12")
 
-# Ubuntu base images
-image = Image("myuser", "myapp").from_base("ubuntu:22.04")
-image = Image("myuser", "myapp").from_base("ubuntu:20.04")
+# Use NVIDIA CUDA base images
+image = Image("myuser", "myapp", "1.0").from_base("nvidia/cuda:12.2-runtime-ubuntu22.04")
 
-# NVIDIA CUDA base images
-image = Image("myuser", "myapp").from_base("nvidia/cuda:11.8-devel-ubuntu22.04")
-image = Image("myuser", "myapp").from_base("nvidia/cuda:12.1-runtime-ubuntu22.04")
-
-# Specialized base images
-image = Image("myuser", "myapp").from_base("tensorflow/tensorflow:2.13.0-gpu")
-image = Image("myuser", "myapp").from_base("pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime")
-
-# Chutes base images
-image = Image("myuser", "myapp").from_base("parachutes/base-python:3.11.9")
+# Use Python base images
+image = Image("myuser", "myapp", "1.0").from_base("python:3.11-slim")
 ```
 
 **Choosing Base Images:**
 
-- **python:3.11-slim**: Lightweight Python, good for CPU workloads
-- **nvidia/cuda:\***: For GPU-accelerated applications
-- **ubuntu:22.04**: When you need full system control
-- **tensorflow/tensorflow:\***: Pre-configured TensorFlow environment
-- **pytorch/pytorch:\***: Pre-configured PyTorch environment
+- **parachutes/python:3.12**: Recommended for most use cases
+- **nvidia/cuda:\***: For GPU-accelerated applications needing specific CUDA versions
+- **python:3.11-slim**: Lightweight, CPU-only workloads
 
-### Package Installation
-
-#### `.run_command(command: str)`
+### `.run_command(command: str)`
 
 Execute shell commands during image build.
 
@@ -171,91 +152,41 @@ def run_command(self, command: str) -> Image
 **Examples:**
 
 ```python
-# Install system packages
-image = (
-    Image("myuser", "myapp")
-    .from_base("ubuntu:22.04")
-    .run_command("apt update && apt install -y python3 python3-pip")
-)
-
 # Install Python packages
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
-    .run_command("pip install torch torchvision torchaudio")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
+    .run_command("pip install torch transformers accelerate")
 )
 
 # Multiple commands in one call
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .run_command("""
-        apt update &&
-        apt install -y git curl &&
         pip install --upgrade pip &&
-        pip install numpy pandas scikit-learn
+        pip install torch transformers &&
+        pip install accelerate datasets
     """)
 )
 
 # Install from requirements file
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .add("requirements.txt", "/tmp/requirements.txt")
     .run_command("pip install -r /tmp/requirements.txt")
 )
 ```
 
-**Common Patterns:**
-
-```python
-# System dependencies for AI/ML
-image = image.run_command("""
-    apt update && apt install -y
-    build-essential
-    git
-    curl
-    wget
-    ffmpeg
-    libsm6
-    libxext6
-    libfontconfig1
-    libxrender1
-""")
-
-# Python ML stack
-image = image.run_command("""
-    pip install
-    torch
-    transformers
-    accelerate
-    datasets
-    tokenizers
-    numpy
-    pandas
-    scikit-learn
-    pillow
-    opencv-python
-""")
-
-# Clean up after installation
-image = image.run_command("""
-    apt autoremove -y &&
-    apt clean &&
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-""")
-```
-
-### File Operations
-
-#### `.add(*args, **kwargs)`
+### `.add(source: str, dest: str)`
 
 Add files from the build context to the image.
 
 **Signature:**
 
 ```python
-def add(self, *args, **kwargs) -> Image
+def add(self, source: str, dest: str) -> Image
 ```
 
 **Examples:**
@@ -263,31 +194,24 @@ def add(self, *args, **kwargs) -> Image
 ```python
 # Add single file
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .add("requirements.txt", "/app/requirements.txt")
 )
 
 # Add directory
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .add("src/", "/app/src/")
-)
-
-# Add with different name
-image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
-    .add("config.yaml", "/app/production-config.yaml")
 )
 
 # Add multiple files
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .add("requirements.txt", "/app/requirements.txt")
-    .add("setup.py", "/app/setup.py")
+    .add("config.yaml", "/app/config.yaml")
     .add("src/", "/app/src/")
 )
 ```
@@ -297,19 +221,15 @@ image = (
 ```python
 # Add requirements first for better caching
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .add("requirements.txt", "/tmp/requirements.txt")  # Add early
-    .run_command("pip install -r /tmp/requirements.txt")     # Install deps
-    .add("src/", "/app/src/")                          # Add code last
+    .run_command("pip install -r /tmp/requirements.txt")  # Install deps
+    .add("src/", "/app/src/")  # Add code last (changes frequently)
 )
 ```
 
-**Note:** Multi-stage builds are not directly supported by the current Image API. Use external build tools for multi-stage builds.
-
-### Environment Configuration
-
-#### `.with_env(key: str, value: str)`
+### `.with_env(key: str, value: str)`
 
 Set environment variables in the image.
 
@@ -324,37 +244,27 @@ def with_env(self, key: str, value: str) -> Image
 ```python
 # Basic environment variables
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .with_env("PYTHONPATH", "/app")
     .with_env("PYTHONUNBUFFERED", "1")
 )
 
-# GPU configuration
+# Model cache configuration
 image = (
-    Image("myuser", "gpu-app")
-    .from_base("nvidia/cuda:11.8-runtime")
-    .with_env("CUDA_VISIBLE_DEVICES", "0")
-    .with_env("NVIDIA_VISIBLE_DEVICES", "all")
-    .with_env("NVIDIA_DRIVER_CAPABILITIES", "compute,utility")
+    Image("myuser", "ai-app", "1.0")
+    .from_base("parachutes/python:3.12")
+    .with_env("TRANSFORMERS_CACHE", "/opt/models")
+    .with_env("HF_HOME", "/opt/huggingface")
+    .with_env("TORCH_HOME", "/opt/torch")
 )
 
 # Application configuration
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .with_env("APP_ENV", "production")
     .with_env("LOG_LEVEL", "INFO")
-    .with_env("MAX_WORKERS", "4")
-)
-
-# Model configuration
-image = (
-    Image("myuser", "ai-app")
-    .from_base("python:3.11-slim")
-    .with_env("TRANSFORMERS_CACHE", "/opt/models")
-    .with_env("HF_HOME", "/opt/huggingface")
-    .with_env("TORCH_HOME", "/opt/torch")
 )
 ```
 
@@ -362,19 +272,15 @@ image = (
 
 ```python
 # Python optimization
-image = image.with_env("PYTHONOPTIMIZE", "2")          # Enable optimizations
-image = image.with_env("PYTHONDONTWRITEBYTECODE", "1") # Don't write .pyc files
-image = image.with_env("PYTHONUNBUFFERED", "1")        # Unbuffered output
+image = image.with_env("PYTHONOPTIMIZE", "2")
+image = image.with_env("PYTHONDONTWRITEBYTECODE", "1")
+image = image.with_env("PYTHONUNBUFFERED", "1")
 
 # PyTorch optimizations
 image = image.with_env("TORCH_BACKENDS_CUDNN_BENCHMARK", "1")
-image = image.with_env("TORCH_BACKENDS_CUDNN_DETERMINISTIC", "0")
-
-# Memory management
-image = image.with_env("MALLOC_ARENA_MAX", "4")        # Reduce memory fragmentation
 ```
 
-#### `.set_workdir(directory: str)`
+### `.set_workdir(directory: str)`
 
 Set the working directory for the container.
 
@@ -389,25 +295,25 @@ def set_workdir(self, directory: str) -> Image
 ```python
 # Set working directory
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .set_workdir("/app")
-    .add(".", "/app")
+    .add("src/", "/app/src/")
 )
 
 # Multiple working directories for different stages
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .set_workdir("/tmp")
     .add("requirements.txt", "requirements.txt")
     .run_command("pip install -r requirements.txt")
     .set_workdir("/app")
-    .add("src/", ".")
+    .add("src/", "src/")
 )
 ```
 
-#### `.set_user(user: str)`
+### `.set_user(user: str)`
 
 Set the user for running commands and the container.
 
@@ -422,8 +328,8 @@ def set_user(self, user: str) -> Image
 ```python
 # Create and use non-root user
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
     .run_command("useradd -m -u 1000 appuser")
     .run_command("mkdir -p /app && chown appuser:appuser /app")
     .set_user("appuser")
@@ -432,438 +338,281 @@ image = (
 
 # Use existing user
 image = (
-    Image("myuser", "myapp")
+    Image("myuser", "myapp", "1.0")
     .from_base("ubuntu:22.04")
     .set_user("nobody")
 )
+```
 
-# Switch between users
+### `.apt_install(package: str | List[str])`
+
+Install system packages using apt.
+
+**Signature:**
+
+```python
+def apt_install(self, package: str | List[str]) -> Image
+```
+
+**Examples:**
+
+```python
+# Install single package
+image = image.apt_install("git")
+
+# Install multiple packages
+image = image.apt_install(["git", "curl", "wget", "ffmpeg"])
+```
+
+### `.apt_remove(package: str | List[str])`
+
+Remove system packages using apt.
+
+**Signature:**
+
+```python
+def apt_remove(self, package: str | List[str]) -> Image
+```
+
+**Example:**
+
+```python
+# Remove packages after use
 image = (
-    Image("myuser", "myapp")
-    .from_base("ubuntu:22.04")
-    .run_command("apt update && apt install -y python3")  # As root
-    .run_command("useradd -m appuser")                     # As root
-    .set_user("appuser")                                  # Switch to appuser
-    .run_command("whoami")                                 # As appuser
+    image
+    .apt_install(["build-essential", "cmake"])
+    .run_command("pip install some-package-that-needs-compilation")
+    .apt_remove(["build-essential", "cmake"])
 )
 ```
 
-### Container Configuration
+### `.with_python(version: str = "3.10.15")`
 
-**Note:** Port exposure is handled automatically by the Chutes platform.
+Install a specific version of Python from source.
 
-#### `.with_entrypoint(entrypoint: List[str])`
+**Signature:**
+
+```python
+def with_python(self, version: str = "3.10.15") -> Image
+```
+
+**Example:**
+
+```python
+# Install specific Python version
+image = (
+    Image("myuser", "myapp", "1.0")
+    .from_base("ubuntu:22.04")
+    .with_python("3.11.5")
+)
+```
+
+**Note:** This builds Python from source, which can be slow. Consider using `parachutes/python:3.12` as your base image instead.
+
+### `.with_maintainer(maintainer: str)`
+
+Set the maintainer for the image.
+
+**Signature:**
+
+```python
+def with_maintainer(self, maintainer: str) -> Image
+```
+
+**Example:**
+
+```python
+image = image.with_maintainer("team@mycompany.com")
+```
+
+### `.with_entrypoint(*args)`
 
 Set the container entrypoint.
 
 **Signature:**
 
 ```python
-def with_entrypoint(self, entrypoint: List[str]) -> Image
+def with_entrypoint(self, *args) -> Image
 ```
 
 **Examples:**
 
 ```python
-# Python application entrypoint
-image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
-    .with_entrypoint(["python", "-m", "myapp"])
-)
+# Python module entrypoint
+image = image.with_entrypoint("python", "-m", "myapp")
 
 # Shell script entrypoint
 image = (
-    Image("myuser", "myapp")
-    .from_base("ubuntu:22.04")
+    image
     .add("entrypoint.sh", "/entrypoint.sh")
     .run_command("chmod +x /entrypoint.sh")
-    .with_entrypoint(["/entrypoint.sh"])
+    .with_entrypoint("/entrypoint.sh")
 )
+```
 
-# Complex entrypoint with arguments
+## Complete Examples
+
+### Basic ML Image
+
+```python
+from chutes.image import Image
+
 image = (
-    Image("myuser", "myapp")
-    .from_base("python:3.11-slim")
-    .with_entrypoint([
-        "python",
-        "-u",           # Unbuffered output
-        "-m", "uvicorn",
-        "myapp:app",
-        "--host", "0.0.0.0",
-        "--port", "8000"
-    ])
-)
-```
-
-**Note:** Default commands are handled by the Chutes platform and chute definitions.
-
-**Note:** Image labels and metadata are handled by the Chutes platform.
-
-**Note:** Health checks are handled by the Chutes platform.
-
-## Advanced Patterns
-
-### Multi-Stage Builds
-
-```python
-# Build stage
-build_stage = (
-    Image("myuser", "builder", "latest")
-    .from_base("python:3.11")
-    .run_command("apt update && apt install -y build-essential git")
-    .add("requirements.txt", "/tmp/requirements.txt")
-    .run_command("pip install -r /tmp/requirements.txt --target /opt/python-packages")
-    .add("src/", "/tmp/src/")
-    .run_command("cd /tmp/src && python setup.py build_ext --inplace")
-)
-
-# Production stage
-production_stage = (
-    Image("myuser", "myapp", "1.0.0")
-    .from_base("python:3.11-slim")
-    .run_command("apt update && apt install -y --no-install-recommends libgcc-s1")
-    # Note: Multi-stage builds not supported in current API
-    .with_env("PYTHONPATH", "/opt/python-packages")
+    Image(username="myuser", name="ml-app", tag="1.0")
+    .from_base("parachutes/python:3.12")
+    .run_command("pip install torch transformers accelerate")
+    .add("requirements.txt", "/app/requirements.txt")
+    .run_command("pip install -r /app/requirements.txt")
+    .add("src/", "/app/src/")
     .set_workdir("/app")
-    .with_user("1000:1000")
-    .with_cmd(["python", "main.py"])
+    .with_env("PYTHONPATH", "/app")
 )
 ```
 
-### Optimized AI/ML Images
+### Optimized PyTorch Image
 
 ```python
-def create_pytorch_image(model_name: str, version: str) -> Image:
-    """Create optimized PyTorch image for specific model."""
-
-    return (
-        Image("myuser", f"pytorch-{model_name}", version)
-        .from_base("nvidia/cuda:11.8-devel-ubuntu22.04")
-
-        # System dependencies
-        .run_command("""
-            apt update && apt install -y
-            python3 python3-pip python3-dev
-            build-essential git curl wget
-            libsm6 libxext6 libfontconfig1 libxrender1
-        """)
-
-        # Python environment
-        .run_command("pip3 install --upgrade pip setuptools wheel")
-
-        # PyTorch with CUDA
-        .run_command("""
-            pip3 install torch torchvision torchaudio
-            --index-url https://download.pytorch.org/whl/cu118
-        """)
-
-        # ML libraries
-        .run_command("""
-            pip3 install
-            transformers[torch]
-            accelerate
-            datasets
-            tokenizers
-            optimum
-        """)
-
-        # Performance libraries
-        .run_command("pip3 install flash-attn --no-build-isolation")
-        .run_command("pip3 install xformers")
-
-        # Environment optimization
-        .with_env("PYTHONOPTIMIZE", "2")
-        .with_env("TORCH_BACKENDS_CUDNN_BENCHMARK", "1")
-        .with_env("TRANSFORMERS_CACHE", "/opt/models")
-        .with_env("HF_HOME", "/opt/huggingface")
-
-        # Setup directories
-        .run_command("mkdir -p /opt/models /opt/huggingface /app")
-        .run_command("chown -R 1000:1000 /opt/models /opt/huggingface /app")
-
-        # Non-root user
-        .set_user("1000:1000")
-        .set_workdir("/app")
-
-        # Cleanup
-        .run_command("""
-            apt autoremove -y &&
-            apt clean &&
-            rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache/pip
-        """)
-    )
-
-# Usage
-pytorch_image = create_pytorch_image("gpt2", "1.0.0")
+image = (
+    Image(username="myuser", name="pytorch-app", tag="1.0",
+          readme="## PyTorch Application\nOptimized for GPU inference.")
+    .from_base("parachutes/python:3.12")
+    
+    # System dependencies
+    .apt_install(["git", "curl", "ffmpeg"])
+    
+    # Python packages
+    .run_command("""
+        pip install --upgrade pip &&
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 &&
+        pip install transformers accelerate datasets tokenizers
+    """)
+    
+    # Environment optimization
+    .with_env("PYTHONUNBUFFERED", "1")
+    .with_env("TRANSFORMERS_CACHE", "/opt/models")
+    .with_env("TORCH_BACKENDS_CUDNN_BENCHMARK", "1")
+    
+    # Application code
+    .add("requirements.txt", "/app/requirements.txt")
+    .run_command("pip install -r /app/requirements.txt")
+    .add("src/", "/app/src/")
+    .set_workdir("/app")
+)
 ```
 
-### Layered Configuration
+### Image with System Dependencies
 
 ```python
-def create_base_ai_image() -> Image:
-    """Create base image for AI applications."""
-
-    return (
-        Image("myuser", "ai-base", "1.0.0")
-        .from_base("nvidia/cuda:11.8-runtime-ubuntu22.04")
-        .run_command("apt update && apt install -y python3 python3-pip")
-        .run_command("pip3 install --upgrade pip")
-        .with_env("PYTHONUNBUFFERED", "1")
-        .with_env("PYTHONDONTWRITEBYTECODE", "1")
-    )
-
-def create_ml_image(base_image: Image) -> Image:
-    """Add ML libraries to base image."""
-
-    return (
-        base_image
-        .run_command("pip3 install numpy pandas scikit-learn")
-        .run_command("pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118")
-        .with_env("TORCH_HOME", "/opt/torch")
-    )
-
-def create_nlp_image(ml_image: Image) -> Image:
-    """Add NLP libraries to ML image."""
-
-    return (
-        ml_image
-        .run_command("pip3 install transformers tokenizers datasets")
-        .run_command("pip3 install spacy nltk")
-        .with_env("TRANSFORMERS_CACHE", "/opt/models")
-    )
-
-# Build layered images
-base = create_base_ai_image()
-ml = create_ml_image(base)
-nlp = create_nlp_image(ml)
+image = (
+    Image(username="myuser", name="audio-processor", tag="1.0")
+    .from_base("parachutes/python:3.12")
+    
+    # Audio processing dependencies
+    .apt_install([
+        "ffmpeg",
+        "libsndfile1",
+        "libportaudio2",
+        "libsox-fmt-all"
+    ])
+    
+    # Python audio libraries
+    .run_command("""
+        pip install soundfile librosa pydub torchaudio
+    """)
+    
+    .add("src/", "/app/src/")
+    .set_workdir("/app")
+)
 ```
 
-## Performance Optimization
+## Layer Caching Best Practices
 
-### Build Optimization
+For faster builds, order your directives from least to most frequently changing:
 
 ```python
-# Optimized build order
-def create_optimized_image() -> Image:
-    """Create image with optimized layer caching."""
+# Good: Optimal layer ordering
+image = (
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
+    
+    # 1. System packages (rarely change)
+    .apt_install(["git", "curl"])
+    
+    # 2. Python dependencies from requirements (change occasionally)
+    .add("requirements.txt", "/tmp/requirements.txt")
+    .run_command("pip install -r /tmp/requirements.txt")
+    
+    # 3. Application code (changes frequently)
+    .add("src/", "/app/src/")
+    
+    .set_workdir("/app")
+)
 
-    return (
-        Image("myuser", "optimized-app", "1.0.0")
-        .from_base("python:3.11-slim")
-
-        # System packages (changes rarely)
-        .run_command("""
-            apt update && apt install -y --no-install-recommends
-            build-essential git curl
-            && rm -rf /var/lib/apt/lists/*
-        """)
-
-        # Python dependencies (changes occasionally)
-        .add("requirements.txt", "/tmp/requirements.txt")
-        .run_command("pip install --no-cache-dir -r /tmp/requirements.txt")
-
-        # Application code (changes frequently)
-        .add("src/", "/app/src/")
-        .set_workdir("/app")
-
-        # Runtime configuration
-        .with_env("PYTHONPATH", "/app")
-        .set_user("1000:1000")
-        .expose_port(8000)
-        .with_cmd(["python", "-m", "src.main"])
-    )
+# Bad: Frequent changes early invalidate cache
+image = (
+    Image("myuser", "myapp", "1.0")
+    .from_base("parachutes/python:3.12")
+    .add("src/", "/app/src/")  # Changes often - invalidates all later layers!
+    .apt_install(["git", "curl"])
+    .run_command("pip install torch")
+)
 ```
 
-### Size Optimization
+## Combining Commands
+
+Combine related commands into single layers to reduce image size:
 
 ```python
-def create_minimal_image() -> Image:
-    """Create minimal size image."""
+# Good: Single layer with cleanup
+image = image.run_command("""
+    apt-get update &&
+    apt-get install -y git curl &&
+    rm -rf /var/lib/apt/lists/*
+""")
 
-    return (
-        Image("myuser", "minimal-app", "1.0.0")
-        .from_base("python:3.11-alpine")  # Smaller base
-
-        # Install only essential packages
-        .run_command("""
-            apk add --no-cache
-            gcc musl-dev linux-headers
-            && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-            && apk del gcc musl-dev linux-headers
-        """)
-
-        # Copy only necessary files
-        .add("src/main.py", "/app/main.py")
-        .add("requirements-minimal.txt", "/tmp/requirements.txt")
-        .run_command("pip install --no-cache-dir -r /tmp/requirements.txt")
-
-        # Remove temporary files
-        .run_command("rm -rf /tmp/* /var/cache/apk/*")
-
-        # Minimal runtime
-        .set_workdir("/app")
-        .set_user("65534:65534")  # nobody user
-        .with_cmd(["python", "main.py"])
-    )
+# Less optimal: Multiple layers
+image = (
+    image
+    .run_command("apt-get update")
+    .run_command("apt-get install -y git curl")
+    .run_command("rm -rf /var/lib/apt/lists/*")  # Cleanup in separate layer doesn't reduce size
+)
 ```
 
-## Testing Images
+## Properties
 
-### Testing Image Builds
+### `image.uid`
 
-```python
-import docker
-import pytest
+The unique identifier for the image.
 
-def test_image_builds_successfully():
-    """Test that image builds without errors."""
+**Type:** `str`
 
-    image = (
-        Image("test", "myapp", "test")
-        .from_base("python:3.11-slim")
-        .run_command("pip install requests")
-    )
+### `image.name`
 
-    # This would build the image
-    # Implementation depends on your build system
-    assert image is not None
+The name of the image.
 
-def test_image_has_correct_environment():
-    """Test that image has correct environment variables."""
+**Type:** `str`
 
-    image = (
-        Image("test", "myapp", "test")
-        .from_base("python:3.11-slim")
-        .with_env("TEST_VAR", "test_value")
-    )
+### `image.tag`
 
-    # Test environment configuration
-    # Implementation depends on your testing framework
-    pass
+The tag/version of the image.
 
-def test_image_security():
-    """Test image security configurations."""
+**Type:** `str`
 
-    image = (
-        Image("test", "secure-app", "test")
-        .from_base("python:3.11-slim")
-        .set_user("1000:1000")  # Non-root user
-    )
+### `image.readme`
 
-    # Test security settings
-    # Implementation depends on your security scanning tools
-    pass
-```
+The documentation for the image.
 
-## Best Practices
+**Type:** `str`
 
-### Security Best Practices
+### `image.username`
 
-1. **Use Non-Root Users**
+The username/organization for the image.
 
-   ```python
-   image = (
-       image
-       .run_command("useradd -m -u 1000 appuser")
-       .with_user("appuser")
-   )
-   ```
+**Type:** `str`
 
-2. **Minimize Attack Surface**
+## See Also
 
-   ```python
-   image = (
-       image
-       .from_base("python:3.11-slim")  # Minimal base
-       .run_command("apt remove --purge -y wget curl")  # Remove unnecessary tools
-   )
-   ```
-
-3. **Keep Images Updated**
-   ```python
-   image = (
-       image
-       .run_command("apt update && apt upgrade -y")  # Update packages
-   )
-   ```
-
-### Performance Best Practices
-
-1. **Optimize Layer Caching**
-
-   ```python
-   # Copy requirements first
-   image = (
-       image
-       .add("requirements.txt", "/tmp/requirements.txt")
-       .run_command("pip install -r /tmp/requirements.txt")
-       .add("src/", "/app/src/")  # Copy code last
-   )
-   ```
-
-2. **Combine RUN Commands**
-
-   ```python
-   # Good: Single layer
-   image = image.run_command("""
-       apt update &&
-       apt install -y python3 &&
-       rm -rf /var/lib/apt/lists/*
-   """)
-
-   # Avoid: Multiple layers
-   # image = image.run_command("apt update")
-   # image = image.run_command("apt install -y python3")
-   # image = image.run_command("rm -rf /var/lib/apt/lists/*")
-   ```
-
-3. **Clean Up in Same Layer**
-   ```python
-   image = image.run_command("""
-       pip install large-package &&
-       rm -rf ~/.cache/pip  # Clean up in same layer
-   """)
-   ```
-
-### Maintainability Best Practices
-
-1. **Use Descriptive Tags**
-
-   ```python
-   image = Image("myuser", "myapp", "v1.2.3-python3.11-cuda11.8")
-   ```
-
-2. **Add Comprehensive Labels**
-
-   ```python
-   image = (
-       image
-       .with_label("version", "1.0.0")
-       .with_label("description", "AI text processing service")
-       .with_label("maintainer", "team@company.com")
-   )
-   ```
-
-3. **Document Complex Builds**
-
-   ```python
-   readme = """
-   # Custom AI Image
-
-   ## Base Image
-   - nvidia/cuda:11.8-runtime-ubuntu22.04
-
-   ## Installed Packages
-   - PyTorch 2.0 with CUDA 11.8
-   - Transformers library
-   - Custom preprocessing tools
-
-   ## Usage
-   Designed for GPU-accelerated text generation.
-   """
-
-   image = Image("myuser", "ai-app", "1.0.0", readme=readme)
-   ```
-
-This comprehensive guide covers all aspects of the `Image` class for building optimized Docker images in Chutes applications.
+- **[Chute Class](/docs/sdk-reference/chute)** - Using images with chutes
+- **[Building Images](/docs/cli/build)** - CLI build commands
+- **[Templates](/docs/sdk-reference/templates)** - Pre-built image templates

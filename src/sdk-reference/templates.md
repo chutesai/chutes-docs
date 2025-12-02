@@ -1,211 +1,200 @@
 # Templates API Reference
 
-Chutes provides pre-built templates for common AI/ML frameworks and use cases. This reference covers all available template functions, their parameters, and customization options.
+Chutes provides pre-built templates for common AI/ML frameworks and use cases. Templates are factory functions that create pre-configured `Chute` instances with optimized settings for specific AI frameworks.
 
 ## Overview
 
-Templates in Chutes are factory functions that create pre-configured `Chute` instances with optimized settings for specific AI frameworks. They provide:
+Templates provide:
 
 - **Quick Setup**: Instant deployment of popular AI models
 - **Best Practices**: Pre-configured optimization settings
-- **Consistent Configuration**: Standardized deployment patterns
-- **Customization**: Full control over parameters and settings
+- **Standard APIs**: OpenAI-compatible endpoints for LLMs
+- **Customization**: Override any parameter as needed
 
 ## Available Templates
 
-### VLLM Templates
+| Template | Use Case | Import |
+|----------|----------|--------|
+| `build_vllm_chute` | LLM serving with vLLM | `from chutes.chute.template import build_vllm_chute` |
+| `build_sglang_chute` | LLM serving with SGLang | `from chutes.chute.template.sglang import build_sglang_chute` |
+| `build_diffusion_chute` | Image generation | `from chutes.chute.template.diffusion import build_diffusion_chute` |
+| `build_embedding_chute` | Text embeddings | `from chutes.chute.template.embedding import build_embedding_chute` |
 
-#### `build_vllm_chute()`
+## vLLM Template
 
-Create a chute optimized for VLLM (high-performance LLM serving).
+### `build_vllm_chute()`
+
+Create a chute optimized for vLLM (high-performance LLM serving) with OpenAI-compatible API endpoints.
+
+**Import:**
+
+```python
+from chutes.chute.template import build_vllm_chute
+```
 
 **Signature:**
 
 ```python
 def build_vllm_chute(
     username: str,
-    name: Optional[str] = None,
-    readme: Optional[str] = None,
     model_name: str,
-    image: Optional[str] = None,
-    node_selector: Optional[NodeSelector] = None,
-    engine_args: Optional[Dict[str, Any]] = None,
-    concurrency: int = 1,
-    **kwargs
+    node_selector: NodeSelector,
+    image: str | Image = VLLM,
+    tagline: str = "",
+    readme: str = "",
+    concurrency: int = 64,
+    engine_args: Dict[str, Any] = {},
+    revision: str = None,
+    max_instances: int = 1,
+    scaling_threshold: float = 0.75,
+    shutdown_after_seconds: int = 300,
+    allow_external_egress: bool = False
 ) -> Chute
 ```
 
 **Parameters:**
 
-- **`username: str`** - Your Chutes username (required)
-- **`name: Optional[str]`** - Chute name (defaults to model name)
-- **`readme: Optional[str]`** - Custom documentation
-- **`model_name: str`** - HuggingFace model identifier (required)
-- **`image: Optional[str]`** - Custom VLLM image (defaults to latest)
-- **`node_selector: Optional[NodeSelector]`** - Hardware requirements
-- **`engine_args: Optional[Dict[str, Any]]`** - VLLM engine configuration
-- **`concurrency: int`** - Maximum concurrent requests
+- **`username`** - Your Chutes username (required)
+- **`model_name`** - HuggingFace model identifier (required)
+- **`node_selector`** - Hardware requirements (required)
+- **`image`** - Custom vLLM image (defaults to built-in)
+- **`tagline`** - Brief description
+- **`readme`** - Detailed documentation
+- **`concurrency`** - Max concurrent requests (default: 64)
+- **`engine_args`** - vLLM engine configuration
+- **`revision`** - Model revision
+- **`max_instances`** - Max scaling instances (default: 1)
+- **`scaling_threshold`** - Scaling trigger threshold (default: 0.75)
+- **`shutdown_after_seconds`** - Idle shutdown time (default: 300)
+- **`allow_external_egress`** - Allow external network access (default: False)
 
 **Basic Example:**
 
 ```python
-from chutes.templates import build_vllm_chute
+from chutes.chute.template import build_vllm_chute
+from chutes.chute import NodeSelector
 
 chute = build_vllm_chute(
     username="myuser",
-    model_name="microsoft/DialoGPT-medium"
+    model_name="mistralai/Mistral-7B-Instruct-v0.3",
+    node_selector=NodeSelector(
+        gpu_count=1,
+        min_vram_gb_per_gpu=24
+    )
 )
 ```
 
 **Advanced Example:**
 
 ```python
-from chutes.templates import build_vllm_chute
+from chutes.chute.template import build_vllm_chute
 from chutes.chute import NodeSelector
 
-# High-performance configuration
 chute = build_vllm_chute(
     username="myuser",
-    name="llama2-70b-chat",
     model_name="meta-llama/Llama-2-70b-chat-hf",
-    image="chutes/vllm:0.9.2.dev0",
     node_selector=NodeSelector(
         gpu_count=8,
         min_vram_gb_per_gpu=48,
-        exclude=["l40", "a6000", "b200", "mi300x"]
+        exclude=["l40", "a6000"]
     ),
     engine_args={
         "gpu_memory_utilization": 0.97,
-        "max_model_len": 96000,
+        "max_model_len": 4096,
         "max_num_seqs": 8,
         "trust_remote_code": True,
-        "tokenizer_mode": "mistral",
-        "config_format": "mistral",
-        "load_format": "mistral",
-        "tool_call_parser": "mistral",
-        "enable_auto_tool_choice": True
+        "tensor_parallel_size": 8
     },
-    concurrency=8
+    concurrency=8,
+    max_instances=3
 )
 ```
 
-**Common VLLM Engine Arguments:**
+**Common vLLM Engine Arguments:**
 
 ```python
 engine_args = {
     # Memory management
-    "gpu_memory_utilization": 0.95,  # Use 95% of GPU memory
-    "swap_space": 4,                 # GB of CPU swap space
-
+    "gpu_memory_utilization": 0.95,   # Use 95% of GPU memory
+    "swap_space": 4,                   # GB of CPU swap space
+    
     # Model configuration
-    "max_model_len": 4096,           # Maximum sequence length
-    "max_num_seqs": 256,             # Maximum concurrent sequences
-    "max_paddings": 256,             # Maximum padding tokens
-
+    "max_model_len": 4096,             # Maximum sequence length
+    "max_num_seqs": 256,               # Maximum concurrent sequences
+    "trust_remote_code": False,        # Allow custom model code
+    
     # Performance optimization
-    "enable_prefix_caching": True,   # Cache prefixes for efficiency
-    "use_v2_block_manager": True,    # Use improved block manager
-    "block_size": 16,                # Token block size
-
-    # Model loading
-    "load_format": "auto",           # Model loading format
-    "revision": "main",              # Model revision/branch
-    "trust_remote_code": False,      # Allow custom model code
-
+    "enable_prefix_caching": True,     # Cache prefixes for efficiency
+    "use_v2_block_manager": True,      # Improved block manager
+    
     # Quantization
-    "quantization": None,            # e.g., "awq", "gptq", "fp8"
-    "dtype": "auto",                 # Model data type
-
+    "quantization": None,              # e.g., "awq", "gptq", "fp8"
+    "dtype": "auto",                   # Model data type
+    
     # Distributed inference
-    "tensor_parallel_size": 1,       # Number of GPUs for tensor parallelism
-    "pipeline_parallel_size": 1,     # Number of GPUs for pipeline parallelism
-
-    # Tokenizer configuration
-    "tokenizer_mode": "auto",        # Tokenizer mode
-    "skip_tokenizer_init": False,    # Skip tokenizer initialization
-
-    # Sampling parameters
-    "seed": None,                    # Random seed
-    "max_logprobs": 0,              # Maximum log probabilities to return
-}
-```
-
-**Model-Specific Configurations:**
-
-```python
-# Llama 2 models
-llama2_args = {
-    "max_model_len": 4096,
-    "gpu_memory_utilization": 0.9,
-    "trust_remote_code": False
-}
-
-# Mistral models
-mistral_args = {
-    "max_model_len": 32768,
-    "tokenizer_mode": "mistral",
-    "config_format": "mistral",
+    "tensor_parallel_size": 1,         # GPUs for tensor parallelism
+    
+    # Tokenizer
+    "tokenizer_mode": "auto",          # Tokenizer mode
+    
+    # Mistral-specific
+    "config_format": "mistral",        # For Mistral models
     "load_format": "mistral",
-    "tool_call_parser": "mistral"
-}
-
-# Code Llama models
-codellama_args = {
-    "max_model_len": 16384,
-    "gpu_memory_utilization": 0.95,
-    "enable_prefix_caching": True
-}
-
-# Yi models
-yi_args = {
-    "max_model_len": 4096,
-    "trust_remote_code": True,
-    "gpu_memory_utilization": 0.9
+    "tool_call_parser": "mistral",
+    "enable_auto_tool_choice": True
 }
 ```
 
-### SGLang Templates
+**Provided Endpoints:**
 
-#### `build_sglang_chute()`
+vLLM template provides OpenAI-compatible endpoints:
+
+- `POST /v1/chat/completions` - Chat completions
+- `POST /v1/completions` - Text completions
+- `POST /v1/tokenize` - Tokenization
+- `POST /v1/detokenize` - Detokenization
+- `GET /v1/models` - List available models
+
+## SGLang Template
+
+### `build_sglang_chute()`
 
 Create a chute optimized for SGLang (structured generation language serving).
+
+**Import:**
+
+```python
+from chutes.chute.template.sglang import build_sglang_chute
+```
 
 **Signature:**
 
 ```python
 def build_sglang_chute(
     username: str,
-    name: Optional[str] = None,
-    readme: Optional[str] = None,
     model_name: str,
-    image: Optional[str] = None,
-    node_selector: Optional[NodeSelector] = None,
-    engine_args: Optional[Dict[str, Any]] = None,
-    concurrency: int = 1,
-    **kwargs
+    node_selector: NodeSelector,
+    image: str | Image = SGLANG,
+    tagline: str = "",
+    readme: str = "",
+    concurrency: int = 64,
+    engine_args: Dict[str, Any] = {},
+    revision: str = None,
+    max_instances: int = 1,
+    scaling_threshold: float = 0.75,
+    shutdown_after_seconds: int = 300,
+    allow_external_egress: bool = False
 ) -> Chute
 ```
 
-**Basic Example:**
+**Example:**
 
 ```python
-from chutes.templates import build_sglang_chute
-
-chute = build_sglang_chute(
-    username="myuser",
-    model_name="microsoft/DialoGPT-medium"
-)
-```
-
-**Advanced Example:**
-
-```python
-from chutes.templates import build_sglang_chute
+from chutes.chute.template.sglang import build_sglang_chute
 from chutes.chute import NodeSelector
 
 chute = build_sglang_chute(
     username="myuser",
-    name="deepseek-r1",
     model_name="deepseek-ai/DeepSeek-R1",
     node_selector=NodeSelector(
         gpu_count=8,
@@ -231,742 +220,307 @@ engine_args = {
     # Server configuration
     "host": "0.0.0.0",
     "port": 30000,
-
+    
     # Model configuration
-    "context_length": 4096,         # Maximum context length
-    "trust_remote_code": True,      # Allow custom model code
-
-    # Performance optimization
-    "tp_size": 1,                   # Tensor parallelism size
-    "mem_fraction_static": 0.9,     # Static memory fraction
-    "chunked_prefill_size": 512,    # Chunked prefill size
-
-    # Sampling configuration
-    "disable_regex_jump_forward": False,  # Regex optimization
-    "enable_flashinfer": True,      # FlashAttention support
-
-    # Quantization
-    "quantization": None,           # Quantization method
-    "load_format": "auto",          # Loading format
+    "context_length": 4096,
+    "trust_remote_code": True,
+    
+    # Performance
+    "tp_size": 1,                    # Tensor parallelism
+    "mem_fraction_static": 0.9,      # Static memory fraction
+    "chunked_prefill_size": 512,
+    
+    # Features
+    "enable_flashinfer": True
 }
 ```
 
-### Text Embeddings Inference (TEI) Templates
+## Diffusion Template
 
-#### `build_tei_chute()`
-
-Create a chute optimized for Text Embeddings Inference.
-
-**Signature:**
-
-```python
-def build_tei_chute(
-    username: str,
-    name: Optional[str] = None,
-    readme: Optional[str] = None,
-    model_name: str,
-    image: Optional[str] = None,
-    node_selector: Optional[NodeSelector] = None,
-    engine_args: Optional[Dict[str, Any]] = None,
-    concurrency: int = 1,
-    **kwargs
-) -> Chute
-```
-
-**Basic Example:**
-
-```python
-from chutes.templates import build_tei_chute
-
-chute = build_tei_chute(
-    username="myuser",
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-```
-
-**Advanced Example:**
-
-```python
-from chutes.templates import build_tei_chute
-from chutes.chute import NodeSelector
-
-chute = build_tei_chute(
-    username="myuser",
-    name="embeddings-service",
-    model_name="BAAI/bge-large-en-v1.5",
-    node_selector=NodeSelector(
-        gpu_count=1,
-        min_vram_gb_per_gpu=16,
-        include=["a100", "l40", "a6000"]
-    ),
-    engine_args={
-        "max_concurrent_requests": 512,
-        "max_batch_tokens": 16384,
-        "max_batch_requests": 32,
-        "pooling": "mean",
-        "normalize": True
-    },
-    concurrency=16
-)
-```
-
-**Common TEI Engine Arguments:**
-
-```python
-engine_args = {
-    # Batching configuration
-    "max_concurrent_requests": 512,    # Maximum concurrent requests
-    "max_batch_tokens": 16384,         # Maximum tokens per batch
-    "max_batch_requests": 32,          # Maximum requests per batch
-
-    # Model configuration
-    "pooling": "mean",                 # Pooling strategy (mean, cls, last)
-    "normalize": True,                 # Normalize embeddings
-    "truncate": True,                  # Truncate long sequences
-
-    # Performance optimization
-    "auto_truncate": True,             # Automatically truncate
-    "default_prompt_name": None,       # Default prompt template
-}
-```
-
-### Diffusion Templates
-
-#### `build_diffusion_chute()`
+### `build_diffusion_chute()`
 
 Create a chute optimized for diffusion model inference (image generation).
 
-**Signature:**
+**Import:**
 
 ```python
-def build_diffusion_chute(
-    username: str,
-    name: Optional[str] = None,
-    readme: Optional[str] = None,
-    model_name: str,
-    image: Optional[str] = None,
-    node_selector: Optional[NodeSelector] = None,
-    engine_args: Optional[Dict[str, Any]] = None,
-    concurrency: int = 1,
-    **kwargs
-) -> Chute
+from chutes.chute.template.diffusion import build_diffusion_chute
 ```
 
-**Basic Example:**
+**Example:**
 
 ```python
-from chutes.templates import build_diffusion_chute
-
-chute = build_diffusion_chute(
-    username="myuser",
-    model_name="black-forest-labs/FLUX.1-dev"
-)
-```
-
-**Advanced Example:**
-
-```python
-from chutes.templates import build_diffusion_chute
+from chutes.chute.template.diffusion import build_diffusion_chute
 from chutes.chute import NodeSelector
 
 chute = build_diffusion_chute(
     username="myuser",
-    name="flux-pro-service",
-    model_name="black-forest-labs/FLUX.1-pro",
+    model_name="black-forest-labs/FLUX.1-dev",
     node_selector=NodeSelector(
         gpu_count=1,
-        min_vram_gb_per_gpu=80,
-        include=["h100", "a100"]
+        min_vram_gb_per_gpu=48,
+        include=["l40", "a100"]
     ),
     engine_args={
         "torch_dtype": "bfloat16",
-        "enable_model_cpu_offload": False,
-        "enable_vae_slicing": False,
-        "enable_vae_tiling": False,
-        "max_sequence_length": 512,
         "guidance_scale": 3.5,
         "num_inference_steps": 28
     },
-    concurrency=1
+    concurrency=1  # Image generation is typically 1 concurrent request
 )
 ```
 
-**Common Diffusion Engine Arguments:**
+**Generation Input Schema:**
 
 ```python
-engine_args = {
-    # Model optimization
-    "torch_dtype": "float16",           # Model precision
-    "enable_model_cpu_offload": True,   # Offload to CPU when idle
-    "enable_sequential_cpu_offload": False,  # Sequential CPU offload
+from pydantic import BaseModel, Field
 
-    # Memory optimization
-    "enable_vae_slicing": True,         # VAE memory optimization
-    "enable_vae_tiling": True,          # VAE tiling for large images
-    "enable_attention_slicing": True,   # Attention memory optimization
-
-    # Generation parameters
-    "guidance_scale": 7.5,              # Default guidance scale
-    "num_inference_steps": 50,          # Default inference steps
-    "max_sequence_length": 77,          # Maximum prompt length
-
-    # Scheduler configuration
-    "scheduler": "DDIM",                # Scheduler type
-    "beta_start": 0.00085,              # Scheduler beta start
-    "beta_end": 0.012,                  # Scheduler beta end
-
-    # Safety and filters
-    "requires_safety_checker": True,    # Enable safety checker
-    "safety_checker": None,             # Custom safety checker
-    "feature_extractor": None,          # Custom feature extractor
-}
+class GenerationInput(BaseModel):
+    prompt: str
+    negative_prompt: str = ""
+    height: int = Field(default=1024, ge=128, le=2048)
+    width: int = Field(default=1024, ge=128, le=2048)
+    num_inference_steps: int = Field(default=25, ge=1, le=50)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
+    seed: Optional[int] = Field(default=None, ge=0, le=2**32 - 1)
 ```
 
-## Template Customization
+**Provided Endpoints:**
 
-### Extending Templates
+- `POST /generate` - Generate image from prompt
 
-You can extend templates with additional functionality:
+## Embedding Template
+
+### `build_embedding_chute()`
+
+Create a chute optimized for text embeddings using vLLM.
+
+**Import:**
 
 ```python
-from chutes.templates import build_vllm_chute
+from chutes.chute.template.embedding import build_embedding_chute
+```
+
+**Signature:**
+
+```python
+def build_embedding_chute(
+    username: str,
+    model_name: str,
+    node_selector: NodeSelector,
+    image: str | Image = VLLM,
+    tagline: str = "",
+    readme: str = "",
+    concurrency: int = 32,
+    engine_args: Dict[str, Any] = {},
+    revision: str = None,
+    max_instances: int = 1,
+    scaling_threshold: float = 0.75,
+    shutdown_after_seconds: int = 300,
+    pooling_type: str = "auto",
+    max_embed_len: int = 3072000,
+    enable_chunked_processing: bool = True,
+    allow_external_egress: bool = False
+) -> Chute
+```
+
+**Example:**
+
+```python
+from chutes.chute.template.embedding import build_embedding_chute
 from chutes.chute import NodeSelector
 
-# Start with template
+chute = build_embedding_chute(
+    username="myuser",
+    model_name="BAAI/bge-large-en-v1.5",
+    node_selector=NodeSelector(
+        gpu_count=1,
+        min_vram_gb_per_gpu=16
+    ),
+    pooling_type="auto",  # Auto-detect optimal pooling
+    concurrency=32
+)
+```
+
+**Pooling Types:**
+
+- `"auto"` - Auto-detect based on model name
+- `"MEAN"` - Mean pooling (E5, Jina models)
+- `"CLS"` - CLS token pooling (BGE models)
+- `"LAST"` - Last token pooling (GTE, Qwen models)
+
+**Provided Endpoints:**
+
+- `POST /v1/embeddings` - OpenAI-compatible embeddings endpoint
+
+## Extending Templates
+
+Templates can be extended with custom functionality:
+
+```python
+from chutes.chute.template import build_vllm_chute
+from chutes.chute import NodeSelector
+
+# Create base chute from template
 chute = build_vllm_chute(
     username="myuser",
-    model_name="microsoft/DialoGPT-medium",
-    node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=16)
+    model_name="mistralai/Mistral-7B-Instruct-v0.3",
+    node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24)
 )
 
-# Add custom endpoints
-@chute.cord(public_api_path="/custom_generate", method="POST")
-async def custom_generate(self, prompt: str, style: str = "formal"):
-    """Custom generation with style control."""
-
-    style_prompts = {
-        "formal": "Please respond in a formal, professional tone: ",
-        "casual": "Please respond in a casual, friendly tone: ",
-        "technical": "Please provide a detailed technical explanation: "
-    }
-
-    styled_prompt = style_prompts.get(style, "") + prompt
-
+# Add custom endpoint
+@chute.cord(public_api_path="/summarize", public_api_method="POST")
+async def summarize(self, text: str) -> dict:
+    """Summarize text using the loaded model."""
+    prompt = f"Summarize the following text:\n\n{text}\n\nSummary:"
+    
     # Use the template's built-in generation
-    result = await self.generate_text(styled_prompt)
+    result = await self.generate(prompt=prompt, max_tokens=200)
+    
+    return {"summary": result}
 
-    return {
-        "generated_text": result["text"],
-        "style": style,
-        "original_prompt": prompt
-    }
-
-# Add custom initialization
-@chute.on_startup()
-async def custom_initialization(self):
-    """Custom initialization logic."""
-
-    # Initialize custom components
-    self.style_classifier = await self.load_style_classifier()
-    self.content_filter = await self.load_content_filter()
-
-    self.logger.info("Custom components initialized")
-
-# Add custom background job
-@chute.job(name="model_health_check", schedule="*/5 * * * *")
-async def health_check_job(self):
-    """Monitor model health every 5 minutes."""
-
-    try:
-        # Test generation
-        test_result = await self.generate_text("Hello, world!")
-
-        # Log health status
-        self.logger.info("Model health check passed")
-
-        return {"status": "healthy", "test_passed": True}
-
-    except Exception as e:
-        self.logger.error(f"Model health check failed: {e}")
-        return {"status": "unhealthy", "error": str(e)}
+# Add custom startup logic
+@chute.on_startup(priority=90)  # Run after template initialization
+async def custom_setup(self):
+    """Custom initialization after model loads."""
+    print("Custom setup complete!")
 ```
 
-### Multi-Model Templates
+## Model-Specific Configurations
 
-Combine multiple templates for complex applications:
-
-```python
-from chutes.templates import build_vllm_chute, build_tei_chute, build_diffusion_chute
-from chutes.chute import Chute, NodeSelector
-
-# Create a multi-modal AI service
-class MultiModalChute:
-    """Multi-modal AI service combining text, embeddings, and image generation."""
-
-    def __init__(self, username: str):
-        self.username = username
-
-        # Text generation service
-        self.text_chute = build_vllm_chute(
-            username=username,
-            name="text-service",
-            model_name="microsoft/DialoGPT-medium",
-            node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=16)
-        )
-
-        # Embeddings service
-        self.embeddings_chute = build_tei_chute(
-            username=username,
-            name="embeddings-service",
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=8)
-        )
-
-        # Image generation service
-        self.image_chute = build_diffusion_chute(
-            username=username,
-            name="image-service",
-            model_name="runwayml/stable-diffusion-v1-5",
-            node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24)
-        )
-
-    def get_chutes(self) -> List[Chute]:
-        """Get all chutes for deployment."""
-        return [self.text_chute, self.embeddings_chute, self.image_chute]
-
-# Usage
-multi_modal = MultiModalChute("myuser")
-chutes = multi_modal.get_chutes()
-
-# Deploy all services
-for chute in chutes:
-    # Deploy each chute
-    pass
-```
-
-### Template Inheritance
-
-Create custom templates based on existing ones:
+### Mistral Models
 
 ```python
-from chutes.templates import build_vllm_chute
-from chutes.chute import NodeSelector
-from typing import Optional, Dict, Any
-
-def build_custom_llm_chute(
-    username: str,
-    model_name: str,
-    name: Optional[str] = None,
-    custom_config: Optional[Dict[str, Any]] = None,
-    **kwargs
-) -> Chute:
-    """Custom LLM template with opinionated defaults."""
-
-    # Default configuration
-    default_config = {
-        "node_selector": NodeSelector(
-            gpu_count=1,
-            min_vram_gb_per_gpu=24,
-            include=["a100", "l40"],
-            exclude=["t4", "v100"]
-        ),
-        "engine_args": {
-            "gpu_memory_utilization": 0.9,
-            "max_model_len": 4096,
-            "max_num_seqs": 128,
-            "enable_prefix_caching": True
-        },
-        "concurrency": 4
-    }
-
-    # Merge with custom configuration
-    if custom_config:
-        default_config.update(custom_config)
-
-    # Override with kwargs
-    default_config.update(kwargs)
-
-    # Create base chute with VLLM template
-    chute = build_vllm_chute(
-        username=username,
-        name=name,
-        model_name=model_name,
-        **default_config
-    )
-
-    # Add custom functionality
-    @chute.cord(public_api_path="/health_detailed", method="GET")
-    async def detailed_health_check(self):
-        """Detailed health check endpoint."""
-
-        health_data = {
-            "model_loaded": hasattr(self, 'model'),
-            "gpu_available": torch.cuda.is_available(),
-            "memory_usage": {},
-            "timestamp": datetime.now().isoformat()
-        }
-
-        if torch.cuda.is_available():
-            for i in range(torch.cuda.device_count()):
-                memory_allocated = torch.cuda.memory_allocated(i)
-                memory_total = torch.cuda.get_device_properties(i).total_memory
-                health_data["memory_usage"][f"gpu_{i}"] = {
-                    "allocated_gb": memory_allocated / (1024**3),
-                    "total_gb": memory_total / (1024**3),
-                    "utilization_percent": (memory_allocated / memory_total) * 100
-                }
-
-        return health_data
-
-    return chute
-
-# Usage
-custom_chute = build_custom_llm_chute(
+chute = build_vllm_chute(
     username="myuser",
-    model_name="microsoft/DialoGPT-medium",
-    custom_config={
-        "concurrency": 8,
-        "engine_args": {
-            "max_model_len": 8192  # Override default
-        }
+    model_name="mistralai/Mistral-7B-Instruct-v0.3",
+    node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24),
+    engine_args={
+        "tokenizer_mode": "mistral",
+        "config_format": "mistral",
+        "load_format": "mistral",
+        "tool_call_parser": "mistral",
+        "enable_auto_tool_choice": True
     }
 )
 ```
 
-## Template Configuration Patterns
-
-### Development vs Production
+### Llama Models
 
 ```python
-def create_development_chute(username: str, model_name: str) -> Chute:
-    """Development-optimized configuration."""
-
-    return build_vllm_chute(
-        username=username,
-        name=f"dev-{model_name.split('/')[-1]}",
-        model_name=model_name,
-        node_selector=NodeSelector(
-            gpu_count=1,
-            min_vram_gb_per_gpu=8,
-            include=["t4", "v100", "l40"]),
-        engine_args={
-            "gpu_memory_utilization": 0.8,  # Conservative for stability
-            "max_model_len": 2048,           # Smaller context for speed
-            "max_num_seqs": 32               # Lower concurrency
-        },
-        concurrency=2
-    )
-
-def create_production_chute(username: str, model_name: str) -> Chute:
-    """Production-optimized configuration."""
-
-    return build_vllm_chute(
-        username=username,
-        name=f"prod-{model_name.split('/')[-1]}",
-        model_name=model_name,
-        node_selector=NodeSelector(
-            gpu_count=2,
-            min_vram_gb_per_gpu=40,
-            include=["a100", "h100"],
-            exclude=["t4", "v100"]),
-        engine_args={
-            "gpu_memory_utilization": 0.95,  # Maximum utilization
-            "max_model_len": 4096,            # Full context length
-            "max_num_seqs": 256,              # High concurrency
-            "enable_prefix_caching": True,    # Performance optimization
-            "use_v2_block_manager": True
-        },
-        concurrency=8
-    )
-```
-
-### Model Size-Based Configuration
-
-```python
-def create_chute_for_model_size(
-    username: str,
-    model_name: str,
-    model_size: str
-) -> Chute:
-    """Create chute optimized for specific model sizes."""
-
-    configurations = {
-        "small": {  # < 1B parameters
-            "node_selector": NodeSelector(
-                gpu_count=1,
-                min_vram_gb_per_gpu=8,
-                include=["t4", "v100", "l40"]
-            ),
-            "engine_args": {
-                "gpu_memory_utilization": 0.8,
-                "max_model_len": 2048,
-                "max_num_seqs": 128
-            },
-            "concurrency": 8
-        },
-
-        "medium": {  # 1B-10B parameters
-            "node_selector": NodeSelector(
-                gpu_count=1,
-                min_vram_gb_per_gpu=24,
-                include=["a100", "l40", "a6000"]
-            ),
-            "engine_args": {
-                "gpu_memory_utilization": 0.9,
-                "max_model_len": 4096,
-                "max_num_seqs": 256
-            },
-            "concurrency": 4
-        },
-
-        "large": {  # 10B-50B parameters
-            "node_selector": NodeSelector(
-                gpu_count=2,
-                min_vram_gb_per_gpu=40,
-                include=["a100", "h100"]
-            ),
-            "engine_args": {
-                "gpu_memory_utilization": 0.95,
-                "max_model_len": 4096,
-                "max_num_seqs": 128,
-                "tensor_parallel_size": 2
-            },
-            "concurrency": 2
-        },
-
-        "xlarge": {  # 50B+ parameters
-            "node_selector": NodeSelector(
-                gpu_count=8,
-                min_vram_gb_per_gpu=80,
-                include=["h100", "a100"]
-            ),
-            "engine_args": {
-                "gpu_memory_utilization": 0.95,
-                "max_model_len": 4096,
-                "max_num_seqs": 64,
-                "tensor_parallel_size": 8
-            },
-            "concurrency": 1
-        }
+chute = build_vllm_chute(
+    username="myuser",
+    model_name="meta-llama/Llama-2-70b-chat-hf",
+    node_selector=NodeSelector(
+        gpu_count=4,
+        min_vram_gb_per_gpu=48
+    ),
+    engine_args={
+        "max_model_len": 4096,
+        "gpu_memory_utilization": 0.95,
+        "tensor_parallel_size": 4
     }
-
-    config = configurations.get(model_size, configurations["medium"])
-
-    return build_vllm_chute(
-        username=username,
-        name=f"{model_size}-{model_name.split('/')[-1]}",
-        model_name=model_name,
-        **config
-    )
+)
 ```
 
-## Template Testing and Validation
-
-### Template Testing Framework
+### DeepSeek Models
 
 ```python
-import pytest
-from chutes.templates import build_vllm_chute, build_tei_chute
-from chutes.chute import NodeSelector
+from chutes.chute.template.sglang import build_sglang_chute
 
-class TemplateTestSuite:
-    """Test suite for template validation."""
+chute = build_sglang_chute(
+    username="myuser",
+    model_name="deepseek-ai/DeepSeek-R1",
+    node_selector=NodeSelector(
+        gpu_count=8,
+        min_vram_gb_per_gpu=141,
+        include=["h200"]
+    ),
+    engine_args={
+        "tp_size": 8,
+        "trust_remote_code": True,
+        "context_length": 65536
+    }
+)
+```
 
-    def test_vllm_template_basic(self):
-        """Test basic VLLM template creation."""
+### FLUX Image Generation
 
-        chute = build_vllm_chute(
-            username="test",
-            model_name="microsoft/DialoGPT-medium"
-        )
+```python
+from chutes.chute.template.diffusion import build_diffusion_chute
 
-        assert chute.config.username == "test"
-        assert chute.config.name is not None
-        assert hasattr(chute, 'generate_text')  # Should have generation endpoint
-
-    def test_vllm_template_with_custom_config(self):
-        """Test VLLM template with custom configuration."""
-
-        node_selector = NodeSelector(
-            gpu_count=2,
-            min_vram_gb_per_gpu=24
-        )
-
-        engine_args = {
-            "max_model_len": 8192,
-            "gpu_memory_utilization": 0.9
-        }
-
-        chute = build_vllm_chute(
-            username="test",
-            name="custom-llm",
-            model_name="microsoft/DialoGPT-medium",
-            node_selector=node_selector,
-            engine_args=engine_args,
-            concurrency=4
-        )
-
-        assert chute.config.name == "custom-llm"
-        assert chute.config.concurrency == 4
-        assert chute.config.node_selector.gpu_count == 2
-
-    def test_tei_template_basic(self):
-        """Test basic TEI template creation."""
-
-        chute = build_tei_chute(
-            username="test",
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-
-        assert chute.config.username == "test"
-        assert hasattr(chute, 'embed_text')  # Should have embedding endpoint
-
-    def test_template_validation(self):
-        """Test template parameter validation."""
-
-        # Test invalid parameters
-        with pytest.raises(ValueError):
-            build_vllm_chute(
-                username="",  # Invalid username
-                model_name="microsoft/DialoGPT-medium"
-            )
-
-        with pytest.raises(ValueError):
-            build_vllm_chute(
-                username="test",
-                model_name=""  # Invalid model name
-            )
-
-    def test_template_consistency(self):
-        """Test that templates produce consistent configurations."""
-
-        chute1 = build_vllm_chute(
-            username="test",
-            model_name="microsoft/DialoGPT-medium"
-        )
-
-        chute2 = build_vllm_chute(
-            username="test",
-            model_name="microsoft/DialoGPT-medium"
-        )
-
-        # Should have identical configurations
-        assert chute1.config.username == chute2.config.username
-        assert chute1.config.concurrency == chute2.config.concurrency
-
-# Run template tests
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+chute = build_diffusion_chute(
+    username="myuser",
+    model_name="black-forest-labs/FLUX.1-dev",
+    node_selector=NodeSelector(
+        gpu_count=1,
+        min_vram_gb_per_gpu=48
+    ),
+    engine_args={
+        "torch_dtype": "bfloat16",
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28
+    }
+)
 ```
 
 ## Best Practices
 
-### Template Selection Guidelines
+### 1. Choose the Right Template
 
-1. **Choose the Right Template**
+```python
+# For OpenAI-compatible LLM API
+vllm_chute = build_vllm_chute(...)
 
-   ```python
-   # For language models with OpenAI-compatible API
-   vllm_chute = build_vllm_chute(username="user", model_name="gpt2")
+# For structured generation and reasoning
+sglang_chute = build_sglang_chute(...)
 
-   # For structured generation and complex prompting
-   sglang_chute = build_sglang_chute(username="user", model_name="gpt2")
+# For text embeddings
+embedding_chute = build_embedding_chute(...)
 
-   # For text embeddings and similarity search
-   tei_chute = build_tei_chute(username="user", model_name="sentence-transformers/all-MiniLM-L6-v2")
+# For image generation
+diffusion_chute = build_diffusion_chute(...)
+```
 
-   # For image generation
-   diffusion_chute = build_diffusion_chute(username="user", model_name="runwayml/stable-diffusion-v1-5")
-   ```
+### 2. Match Hardware to Model
 
-2. **Start with Templates, Customize as Needed**
+```python
+# 7B model - single GPU
+node_selector = NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24)
 
-   ```python
-   # Start with template
-   chute = build_vllm_chute(username="user", model_name="gpt2")
+# 70B model - multiple GPUs with tensor parallelism
+node_selector = NodeSelector(gpu_count=4, min_vram_gb_per_gpu=48)
+engine_args = {"tensor_parallel_size": 4}
+```
 
-   # Add custom functionality
-   @chute.cord(public_api_path="/custom")
-   async def custom_endpoint(self):
-       return {"message": "Custom functionality"}
-   ```
+### 3. Set Appropriate Concurrency
 
-3. **Use Appropriate Node Selectors**
+```python
+# vLLM/SGLang with continuous batching - high concurrency
+chute = build_vllm_chute(..., concurrency=64)
 
-   ```python
-   # Match hardware to model requirements
-   large_model_chute = build_vllm_chute(
-       username="user",
-       model_name="meta-llama/Llama-2-70b-hf",
-       node_selector=NodeSelector(
-           gpu_count=4,
-           min_vram_gb_per_gpu=48
-       )
-   )
-   ```
+# Image generation - low concurrency
+chute = build_diffusion_chute(..., concurrency=1)
 
-4. **Optimize Engine Arguments**
-   ```python
-   # Production optimization
-   production_chute = build_vllm_chute(
-       username="user",
-       model_name="gpt2",
-       engine_args={
-           "gpu_memory_utilization": 0.95,
-           "enable_prefix_caching": True,
-           "use_v2_block_manager": True
-       }
-   )
-   ```
+# Embeddings - medium-high concurrency
+chute = build_embedding_chute(..., concurrency=32)
+```
 
-### Common Patterns
+### 4. Use Auto-Scaling for Production
 
-1. **Environment-Specific Configuration**
+```python
+chute = build_vllm_chute(
+    ...,
+    max_instances=10,
+    scaling_threshold=0.75,
+    shutdown_after_seconds=300
+)
+```
 
-   ```python
-   def create_chute_for_environment(env: str, username: str, model_name: str):
-       if env == "development":
-           return build_vllm_chute(
-               username=username,
-               model_name=model_name,
-               node_selector=NodeSelector(),
-               concurrency=1
-           )
-       elif env == "production":
-           return build_vllm_chute(
-               username=username,
-               model_name=model_name,
-               node_selector=NodeSelector(),
-               concurrency=8
-           )
-   ```
+## See Also
 
-2. **A/B Testing Templates**
-
-   ```python
-   # Template A: VLLM
-   template_a = build_vllm_chute(
-       username="user",
-       name="model-a",
-       model_name="microsoft/DialoGPT-medium"
-   )
-
-   # Template B: SGLang
-   template_b = build_sglang_chute(
-       username="user",
-       name="model-b",
-       model_name="microsoft/DialoGPT-medium"
-   )
-   ```
-
-3. **Template Composition**
-   ```python
-   def create_complete_ai_service(username: str):
-       return {
-           "text": build_vllm_chute(username, model_name="gpt2"),
-           "embeddings": build_tei_chute(username, model_name="sentence-transformers/all-MiniLM-L6-v2"),
-           "images": build_diffusion_chute(username, model_name="runwayml/stable-diffusion-v1-5")
-       }
-   ```
-
-This comprehensive guide covers all aspects of Chutes templates for rapid AI application deployment.
+- **[Chute Class](/docs/sdk-reference/chute)** - Chute class reference
+- **[NodeSelector](/docs/sdk-reference/node-selector)** - Hardware requirements
+- **[vLLM Template Guide](/docs/templates/vllm)** - Detailed vLLM documentation
+- **[SGLang Template Guide](/docs/templates/sglang)** - Detailed SGLang documentation
+- **[Diffusion Template Guide](/docs/templates/diffusion)** - Image generation guide
