@@ -40,6 +40,7 @@ chute = build_vllm_chute(
 ```
 
 Deploy this chute:
+
 ```bash
 chutes deploy deploy_agent_chute:chute --wait
 ```
@@ -127,9 +128,9 @@ if tool_calls:
     for tool_call in tool_calls:
         function_name = tool_call.function.name
         function_args = json.loads(tool_call.function.arguments)
-        
+
         print(f"🛠️ Executing {function_name} with {function_args}...")
-        
+
         if function_name == "calculate_square_root":
             result = str(calculate_square_root(**function_args))
         elif function_name == "get_weather":
@@ -150,7 +151,7 @@ if tool_calls:
         model="mistralai/Mistral-7B-Instruct-v0.3",
         messages=messages
     )
-    
+
     print(f"🤖 Agent: {final_response.choices[0].message.content}")
 ```
 
@@ -236,13 +237,13 @@ def search_knowledge_base(query: str):
     """Tool exposed to the LLM."""
     # 1. Embed query using Chutes TEI endpoint
     embedding = requests.post(
-        "https://myuser-embeddings.chutes.ai/embed", 
+        "https://myuser-embeddings.chutes.ai/embed",
         json={"inputs": query}
     ).json()
-    
+
     # 2. Search vector DB
     results = vector_db.search(embedding)
-    
+
     # 3. Return context
     return json.dumps(results)
 
@@ -252,8 +253,8 @@ def search_knowledge_base(query: str):
 ## Best Practices for Agents
 
 1.  **System Prompts**: Clearly define the agent's persona and constraints.
-    *   *Bad:* "You are a bot."
-    *   *Good:* "You are a data analysis assistant. You have access to a SQL database. Always verify schemas before querying."
+    - _Bad:_ "You are a bot."
+    - _Good:_ "You are a data analysis assistant. You have access to a SQL database. Always verify schemas before querying."
 2.  **Tool Descriptions**: Models rely heavily on tool descriptions. Be verbose and precise.
 3.  **Error Handling**: If a tool fails, feed the error message back to the model as a "tool" role message. The model can often self-correct.
 4.  **Concurrency**: For agents that make parallel tool calls, use Python's `asyncio.gather` to execute them concurrently before responding to the model.
@@ -263,4 +264,3 @@ def search_knowledge_base(query: str):
 - **[Embedding Service](/docs/examples/embeddings)** - Set up your RAG backend
 - **[SGLang Template](/docs/templates/sglang)** - Advanced constrained generation
 - **[vLLM Template](/docs/templates/vllm)** - High-performance tool serving
-
