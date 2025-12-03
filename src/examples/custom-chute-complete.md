@@ -480,8 +480,9 @@ chute = Chute(
 
 # Deploy the service
 print("Deploying comprehensive text analysis service...")
-result = chute.deploy()
-print(f"✅ Service deployed: {result}")
+# Use the CLI to deploy:
+# chutes deploy analysis_service:chute
+print("✅ Service deployed! (Use `chutes deploy` CLI command)")
 ```
 
 ## Usage Examples

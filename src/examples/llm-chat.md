@@ -27,11 +27,10 @@ from chutes.chute.template.vllm import build_vllm_chute
 # Create a high-performance chat service
 chute = build_vllm_chute(
     username="myuser",
-    model_name="microsoft/DialoGPT-medium",
-    revision="main",  # Required parameter
+    readme="## Meta Llama 3.2 1B Instruct\n### Hello.",
+    model_name="unsloth/Llama-3.2-1B-Instruct",
     node_selector=NodeSelector(
         gpu_count=1,
-        min_vram_gb_per_gpu=24
     ),
     concurrency=4
 )
@@ -44,31 +43,44 @@ For production workloads with larger models:
 ```python
 from chutes.chute import NodeSelector
 from chutes.chute.template.vllm import build_vllm_chute
+from chutes.image import Image
 
-# Production-ready Mistral deployment
+image = (
+    Image(
+        username="chutes",
+        name="vllm_gemma",
+        tag="0.8.1",
+        readme="## vLLM - fast, flexible llm inference",
+    )
+    .from_base("parachutes/base-python:3.12.9")
+    .run_command(
+        "pip install --no-cache wheel packaging git+https://github.com/huggingface/transformers.git qwen-vl-utils[decord]==0.0.8"
+    )
+    .run_command("pip install --upgrade vllm==0.8.1")
+    .run_command("pip install --no-cache flash-attn")
+    .add("gemma_chat_template.jinja", "/app/gemma_chat_template.jinja")
+)
+
 chute = build_vllm_chute(
-    username="myuser",
-    model_name="chutesai/Mistral-Small-3.1-24B-Instruct-2503",
-    revision="cb765b56fbc11c61ac2a82ec777e3036964b975c",  # Required parameter moved to top level
-    image="chutes/vllm:0.9.2.dev0",
-    readme="Mistral-Small-3.1-24B-Instruct-2503 - High-performance chat model",
+    username="chutes",
+    readme="Gemma 3 1B IT",
+    model_name="unsloth/gemma-3-1b-it",
+    image=image,
     node_selector=NodeSelector(
         gpu_count=8,
         min_vram_gb_per_gpu=48,
-        exclude=["l40", "a6000", "b200", "mi300x"],  # Exclude slower GPUs
     ),
+    concurrency=8,
     engine_args=dict(
-        gpu_memory_utilization=0.97,
-        max_model_len=96000,
-        limit_mm_per_prompt={"image": 8},
+        revision="284477f075e7d8bfa2c7e2e0131c3fe4055baa7f",
+        num_scheduler_steps=8,
+        enforce_eager=False,
         max_num_seqs=8,
-        trust_remote_code=True,
-        tokenizer_mode="mistral",
-        config_format="mistral",
-        load_format="mistral",
-        tool_call_parser="mistral",
-        enable_auto_tool_choice=True),
-    concurrency=8)
+        tool_call_parser="pythonic",
+        enable_auto_tool_choice=True,
+        chat_template="/app/gemma_chat_template.jinja",
+    ),
+)
 ```
 
 ## Advanced: SGLang with Custom Image

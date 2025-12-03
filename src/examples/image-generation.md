@@ -75,13 +75,14 @@ chute = Chute(
     name="FLUX.1-dev-generator",
     readme=readme,
     image=image,
-    # FLUX.1 requires significant GPU memory
+    # This model is quite large, so we'll require GPUs with at least 48GB VRAM to run it.
     node_selector=NodeSelector(
         gpu_count=1,
         min_vram_gb_per_gpu=80,  # 80GB for optimal performance
     ),
-    # Limit concurrency due to memory requirements
-    concurrency=1)
+    # Limit one request at a time.
+    concurrency=1,
+)
 ```
 
 ### Model Initialization
@@ -92,23 +93,25 @@ Initialize the diffusion pipeline on startup:
 @chute.on_startup()
 async def initialize_pipeline(self):
     """
-    Initialize the FLUX.1 pipeline with optimizations.
+    Initialize the pipeline, download model if necessary.
+
+    This code never runs on your machine directly, it runs on the GPU nodes
+    powering chutes.
     """
     import torch
     from diffusers import FluxPipeline
 
-    # Clear GPU cache and initialize
     self.torch = torch
     torch.cuda.empty_cache()
     torch.cuda.init()
     torch.cuda.set_device(0)
 
-    # Load pre-downloaded model for faster startup
     self.pipeline = FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-dev",
         torch_dtype=torch.bfloat16,
-        local_files_only=True,  # Use cached model
-        cache_dir="/home/chutes/.cache/huggingface/hub").to("cuda")
+        local_files_only=True,
+        cache_dir="/home/chutes/.cache/huggingface/hub",
+    ).to("cuda")
 ```
 
 ### Generation Endpoint
@@ -121,21 +124,24 @@ from io import BytesIO
 from fastapi import Response
 
 @chute.cord(
+    # Expose this function via the subdomain-based chutes.ai HTTP invocation, e.g.
+    # this becomes https://{username}-{chute slug}.chutes.ai/generate
     public_api_path="/generate",
+    # The function is invoked in the subdomain-based system via POSTs.
     method="POST",
+    # Input/minimal input schemas.
     input_schema=GenerationInput,
     minimal_input_schema=MinifiedGenerationInput,
-    output_content_type="image/jpeg")
+    # Set output content type header to image/jpeg so we can return the raw image.
+    output_content_type="image/jpeg",
+)
 async def generate(self, params: GenerationInput) -> Response:
     """
-    Generate high-quality images from text prompts.
+    Generate an image.
     """
-    # Set up random seed if provided
     generator = None
     if params.seed is not None:
         generator = self.torch.Generator(device="cuda").manual_seed(params.seed)
-
-    # Generate image with optimized inference
     with self.torch.inference_mode():
         result = self.pipeline(
             prompt=params.prompt,
@@ -144,20 +150,17 @@ async def generate(self, params: GenerationInput) -> Response:
             num_inference_steps=params.num_inference_steps,
             guidance_scale=params.guidance_scale,
             max_sequence_length=256,
-            generator=generator)
-
-    # Convert to JPEG and return
+            generator=generator,
+        )
     image = result.images[0]
     buffer = BytesIO()
     image.save(buffer, format="JPEG", quality=85)
     buffer.seek(0)
-
     return Response(
         content=buffer.getvalue(),
         media_type="image/jpeg",
-        headers={
-            "Content-Disposition": f'attachment; filename="{uuid.uuid4()}.jpg"'
-        })
+        headers={"Content-Disposition": f'attachment; filename="{uuid.uuid4()}.jpg"'},
+    )
 ```
 
 ## Alternative: Stable Diffusion Setup
