@@ -40,7 +40,7 @@ export CHUTES_API_KEY=your-api-key-here
 You can initialize the provider with your API key.
 
 ```typescript
-import { createChutes } from '@chutes-ai/ai-sdk-provider';
+import { createChutes } from "@chutes-ai/ai-sdk-provider";
 
 const chutes = createChutes({
   apiKey: process.env.CHUTES_API_KEY,
@@ -54,13 +54,13 @@ const chutes = createChutes({
 Generate text using any LLM hosted on Chutes.
 
 ```typescript
-import { generateText } from 'ai';
+import { generateText } from "ai";
 
-const model = chutes('https://chutes-deepseek-ai-deepseek-v3.chutes.ai');
+const model = chutes("https://chutes-deepseek-ai-deepseek-v3.chutes.ai");
 
 const result = await generateText({
   model,
-  prompt: 'Explain quantum computing in simple terms',
+  prompt: "Explain quantum computing in simple terms",
 });
 
 console.log(result.text);
@@ -71,11 +71,11 @@ console.log(result.text);
 Stream responses in real-time for a better user experience.
 
 ```typescript
-import { streamText } from 'ai';
+import { streamText } from "ai";
 
 const result = await streamText({
-  model: chutes('https://chutes-meta-llama-llama-3-1-70b-instruct.chutes.ai'),
-  prompt: 'Write a story about a space traveler.',
+  model: chutes("https://chutes-meta-llama-llama-3-1-70b-instruct.chutes.ai"),
+  prompt: "Write a story about a space traveler.",
 });
 
 for await (const chunk of result.textStream) {
@@ -88,22 +88,22 @@ for await (const chunk of result.textStream) {
 Connect LLMs to external data and functions.
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 const result = await generateText({
-  model: chutes('https://chutes-deepseek-ai-deepseek-v3.chutes.ai'),
+  model: chutes("https://chutes-deepseek-ai-deepseek-v3.chutes.ai"),
   tools: {
     getWeather: {
-      description: 'Get the current weather',
+      description: "Get the current weather",
       parameters: z.object({
-        location: z.string().describe('City name'),
+        location: z.string().describe("City name"),
       }),
       execute: async ({ location }) => {
-        return { temp: 72, condition: 'Sunny', location };
+        return { temp: 72, condition: "Sunny", location };
       },
     },
   },
-  prompt: 'What is the weather in San Francisco?',
+  prompt: "What is the weather in San Francisco?",
 });
 ```
 
@@ -114,17 +114,17 @@ const result = await generateText({
 Generate images using models like FLUX.
 
 ```typescript
-import * as fs from 'fs';
+import * as fs from "fs";
 
-const imageModel = chutes.imageModel('flux-dev');
+const imageModel = chutes.imageModel("flux-dev");
 
 const result = await imageModel.doGenerate({
-  prompt: 'A cyberpunk city with neon lights and flying cars',
-  size: '1024x1024',
+  prompt: "A cyberpunk city with neon lights and flying cars",
+  size: "1024x1024",
 });
 
-const base64Data = result.images[0].split(',')[1];
-fs.writeFileSync('city.png', Buffer.from(base64Data, 'base64'));
+const base64Data = result.images[0].split(",")[1];
+fs.writeFileSync("city.png", Buffer.from(base64Data, "base64"));
 ```
 
 ### Text-to-Speech (TTS)
@@ -132,14 +132,14 @@ fs.writeFileSync('city.png', Buffer.from(base64Data, 'base64'));
 Convert text to speech using over 50 available voices.
 
 ```typescript
-const audioModel = chutes.audioModel('your-tts-chute-id');
+const audioModel = chutes.audioModel("your-tts-chute-id");
 
 const result = await audioModel.textToSpeech({
-  text: 'Welcome to the future of AI.',
-  voice: 'af_bella', // American Female - Bella
+  text: "Welcome to the future of AI.",
+  voice: "af_bella", // American Female - Bella
 });
 
-fs.writeFileSync('output.mp3', result.audio);
+fs.writeFileSync("output.mp3", result.audio);
 ```
 
 ### Speech-to-Text (STT)
@@ -147,12 +147,12 @@ fs.writeFileSync('output.mp3', result.audio);
 Transcribe audio files.
 
 ```typescript
-const audioModel = chutes.audioModel('your-stt-chute-id');
-const audioBuffer = fs.readFileSync('recording.mp3');
+const audioModel = chutes.audioModel("your-stt-chute-id");
+const audioBuffer = fs.readFileSync("recording.mp3");
 
 const transcription = await audioModel.speechToText({
   audio: audioBuffer,
-  language: 'en',
+  language: "en",
 });
 
 console.log(transcription.text);
@@ -166,12 +166,12 @@ Pre-warm chutes to eliminate cold starts.
 
 ```typescript
 // Warm up a chute
-const result = await chutes.therm.warmup('your-chute-id');
+const result = await chutes.therm.warmup("your-chute-id");
 
 if (result.isHot) {
-  console.log('Chute is ready!');
+  console.log("Chute is ready!");
 } else {
-  console.log('Warming up...');
+  console.log("Warming up...");
 }
 ```
 
@@ -180,13 +180,13 @@ if (result.isHot) {
 Generate vector embeddings for semantic search.
 
 ```typescript
-import { embedMany } from 'ai';
+import { embedMany } from "ai";
 
-const embeddingModel = chutes.textEmbeddingModel('text-embedding-3-small');
+const embeddingModel = chutes.textEmbeddingModel("text-embedding-3-small");
 
 const { embeddings } = await embedMany({
   model: embeddingModel,
-  values: ['Hello world', 'Machine learning is cool'],
+  values: ["Hello world", "Machine learning is cool"],
 });
 ```
 
@@ -202,4 +202,3 @@ const { embeddings } = await embedMany({
 
 - Check the [GitHub Repository](https://github.com/chutesai/ai-sdk-provider-chutes) for issues.
 - Join the [Discord Community](https://discord.gg/chutes).
-
