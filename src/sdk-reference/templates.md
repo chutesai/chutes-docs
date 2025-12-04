@@ -117,23 +117,23 @@ engine_args = {
     # Memory management
     "gpu_memory_utilization": 0.95,   # Use 95% of GPU memory
     "swap_space": 4,                   # GB of CPU swap space
-    
+
     # Model configuration
     "max_model_len": 4096,             # Maximum sequence length
     "max_num_seqs": 256,               # Maximum concurrent sequences
     "trust_remote_code": False,        # Allow custom model code
-    
+
     # Performance optimization
     "enable_prefix_caching": True,     # Cache prefixes for efficiency
     "use_v2_block_manager": True,      # Improved block manager
-    
+
     # Quantization
     "quantization": None,              # e.g., "awq", "gptq", "fp8"
     "dtype": "auto",                   # Model data type
-    
+
     # Distributed inference
     "tensor_parallel_size": 1,         # GPUs for tensor parallelism
-    
+
     # Tokenizer
     "tokenizer_mode": "auto",          # Tokenizer mode
     
@@ -220,16 +220,16 @@ engine_args = {
     # Server configuration
     "host": "0.0.0.0",
     "port": 30000,
-    
+
     # Model configuration
     "context_length": 4096,
     "trust_remote_code": True,
-    
+
     # Performance
     "tp_size": 1,                    # Tensor parallelism
     "mem_fraction_static": 0.9,      # Static memory fraction
     "chunked_prefill_size": 512,
-    
+
     # Features
     "enable_flashinfer": True
 }
@@ -373,10 +373,10 @@ chute = build_vllm_chute(
 async def summarize(self, text: str) -> dict:
     """Summarize text using the loaded model."""
     prompt = f"Summarize the following text:\n\n{text}\n\nSummary:"
-    
+
     # Use the template's built-in generation
     result = await self.generate(prompt=prompt, max_tokens=200)
-    
+
     return {"summary": result}
 
 # Add custom startup logic
@@ -391,7 +391,7 @@ async def custom_setup(self):
 ### Mistral Models
 
 ```python
-chute = build_vllm_chute(
+    chute = build_vllm_chute(
     username="myuser",
     model_name="mistralai/Mistral-7B-Instruct-v0.3",
     node_selector=NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24),
@@ -411,16 +411,16 @@ chute = build_vllm_chute(
 chute = build_vllm_chute(
     username="myuser",
     model_name="meta-llama/Llama-2-70b-chat-hf",
-    node_selector=NodeSelector(
+        node_selector=NodeSelector(
         gpu_count=4,
         min_vram_gb_per_gpu=48
     ),
-    engine_args={
+        engine_args={
         "max_model_len": 4096,
         "gpu_memory_utilization": 0.95,
         "tensor_parallel_size": 4
     }
-)
+    )
 ```
 
 ### DeepSeek Models
@@ -432,16 +432,16 @@ chute = build_sglang_chute(
     username="myuser",
     model_name="deepseek-ai/DeepSeek-R1",
     node_selector=NodeSelector(
-        gpu_count=8,
+                gpu_count=8,
         min_vram_gb_per_gpu=141,
         include=["h200"]
-    ),
+            ),
     engine_args={
         "tp_size": 8,
         "trust_remote_code": True,
         "context_length": 65536
     }
-)
+    )
 ```
 
 ### FLUX Image Generation
@@ -468,7 +468,7 @@ chute = build_diffusion_chute(
 
 ### 1. Choose the Right Template
 
-```python
+   ```python
 # For OpenAI-compatible LLM API
 vllm_chute = build_vllm_chute(...)
 
@@ -478,24 +478,24 @@ sglang_chute = build_sglang_chute(...)
 # For text embeddings
 embedding_chute = build_embedding_chute(...)
 
-# For image generation
+   # For image generation
 diffusion_chute = build_diffusion_chute(...)
-```
+   ```
 
 ### 2. Match Hardware to Model
 
-```python
+   ```python
 # 7B model - single GPU
 node_selector = NodeSelector(gpu_count=1, min_vram_gb_per_gpu=24)
 
 # 70B model - multiple GPUs with tensor parallelism
 node_selector = NodeSelector(gpu_count=4, min_vram_gb_per_gpu=48)
 engine_args = {"tensor_parallel_size": 4}
-```
+   ```
 
 ### 3. Set Appropriate Concurrency
 
-```python
+   ```python
 # vLLM/SGLang with continuous batching - high concurrency
 chute = build_vllm_chute(..., concurrency=64)
 
@@ -504,11 +504,11 @@ chute = build_diffusion_chute(..., concurrency=1)
 
 # Embeddings - medium-high concurrency
 chute = build_embedding_chute(..., concurrency=32)
-```
+   ```
 
 ### 4. Use Auto-Scaling for Production
 
-```python
+   ```python
 chute = build_vllm_chute(
     ...,
     max_instances=10,

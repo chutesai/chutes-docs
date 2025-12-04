@@ -134,6 +134,8 @@ asyncio.run(generate_image())
 
 ## TypeScript Example
 
+> **Tip:** For TypeScript projects, consider using the [Vercel AI SDK Integration](/docs/integrations/vercel-ai-sdk) for a more streamlined developer experience with built-in streaming, tool calling, and type safety.
+
 ### Basic LLM Invocation
 
 ```typescript

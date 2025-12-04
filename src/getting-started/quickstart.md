@@ -224,6 +224,10 @@ chute = build_vllm_chute(
 - **[Custom Image Building](../guides/custom-images)** - Advanced Docker setups
 - **[Input/Output Schemas](../guides/schemas)** - Type-safe APIs
 
+### 🔗 Integrations
+
+- **[Vercel AI SDK](../integrations/vercel-ai-sdk)** - Use Chutes with the Vercel AI SDK for streaming, tool calling, and more
+
 ## Common Questions
 
 **Q: How much does this cost?**
