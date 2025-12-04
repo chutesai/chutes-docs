@@ -206,11 +206,11 @@ Jobs receive an `output_dir` in `job_data` where they can write files:
 @chute.job(upload=True)
 async def job_with_outputs(self, **job_data):
     output_dir = job_data["output_dir"]
-    
+
     # Write output files
     model_path = f"{output_dir}/model.pt"
     torch.save(self.model.state_dict(), model_path)
-    
+
     # Write logs
     with open(f"{output_dir}/training_log.txt", "w") as f:
         f.write("\n".join(self.logs))
@@ -281,7 +281,7 @@ async def train_model(self, **job_data):
     # Save final model
     final_path = f"{output_dir}/final_model.pt"
     torch.save(model.state_dict(), final_path)
-    
+
     return {
         "status": "completed",
         "epochs_completed": epoch + 1,
@@ -336,12 +336,12 @@ async def batch_processing_job(self, **job_data):
     results = []
     processed = 0
     failed = 0
-    
+
     for item in items:
         if self.cancel_event.is_set():
             print(f"Cancelled after processing {processed} items")
             break
-        
+
         try:
             result = await self.process_item(item)
             results.append(result)
@@ -353,7 +353,7 @@ async def batch_processing_job(self, **job_data):
     # Save results
     with open(f"{output_dir}/results.json", "w") as f:
         json.dump(results, f)
-    
+
     return {
         "status": "completed",
         "processed": processed,
@@ -371,20 +371,20 @@ Jobs should handle errors gracefully and return appropriate status:
 async def robust_job(self, **job_data):
     """Job with comprehensive error handling."""
     output_dir = job_data["output_dir"]
-    
+
     try:
         # Perform main work
         result = await self.do_work()
-        
+
         # Save output
         with open(f"{output_dir}/output.json", "w") as f:
             json.dump(result, f)
-        
+
         return {
             "status": "completed",
             "result": result
         }
-    
+
     except asyncio.CancelledError:
         # Handle cancellation
         print("Job was cancelled")
@@ -397,7 +397,7 @@ async def robust_job(self, **job_data):
             "error": "invalid_input",
             "message": str(e)
         }
-    
+
     except Exception as e:
         # Handle unexpected errors
         print(f"Unexpected error: {e}")
@@ -407,7 +407,7 @@ async def robust_job(self, **job_data):
             f.write(f"Error: {e}\n")
             import traceback
             f.write(traceback.format_exc())
-        
+
         return {
             "status": "error",
             "error": str(e)
@@ -467,7 +467,7 @@ async def job_with_checkpoints(self, **job_data):
 @chute.job(ssh=True, timeout=7200)
 async def debuggable_job(self, **job_data):
     """Enable SSH so you can connect and debug if needed."""
-    pass
+        pass
 ```
 
 ### 5. Return Meaningful Status

@@ -205,7 +205,7 @@ from fastapi import Response
 )
 async def generate_image(self, prompt: str) -> Response:
     image_data = await self.image_model.generate(prompt)
-    
+
     return Response(
         content=image_data,
         media_type="image/png",
@@ -223,7 +223,7 @@ async def generate_image(self, prompt: str) -> Response:
 )
 async def text_to_speech(self, text: str) -> Response:
     audio_data = await self.tts_model.synthesize(text)
-    
+
     return Response(
         content=audio_data,
         media_type="audio/wav"
@@ -339,19 +339,19 @@ from fastapi import HTTPException
 
 @chute.cord(public_api_path="/generate")
 async def generate_with_errors(self, prompt: str):
-    # Validate input
-    if not prompt.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Prompt cannot be empty"
-        )
-    
-    if len(prompt) > 10000:
-        raise HTTPException(
-            status_code=400,
-            detail="Prompt too long (max 10,000 characters)"
-        )
-    
+        # Validate input
+        if not prompt.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Prompt cannot be empty"
+            )
+
+        if len(prompt) > 10000:
+            raise HTTPException(
+                status_code=400,
+                detail="Prompt too long (max 10,000 characters)"
+            )
+
     try:
         result = await self.model.generate(prompt)
         return {"generated_text": result}
@@ -447,29 +447,29 @@ async def health(self) -> dict:
 
 ### 1. Use Descriptive Paths
 
-```python
-# Good
-@chute.cord(public_api_path="/generate_text")
-@chute.cord(public_api_path="/analyze_sentiment")
+   ```python
+   # Good
+   @chute.cord(public_api_path="/generate_text")
+   @chute.cord(public_api_path="/analyze_sentiment")
 
-# Avoid
-@chute.cord(public_api_path="/api")
+   # Avoid
+   @chute.cord(public_api_path="/api")
 @chute.cord(public_api_path="/do")
-```
+   ```
 
 ### 2. Choose Appropriate Methods
 
-```python
+   ```python
 # GET for read-only operations
 @chute.cord(public_api_path="/models", public_api_method="GET")
 
 # POST for AI generation/processing
 @chute.cord(public_api_path="/generate", public_api_method="POST")
-```
+   ```
 
 ### 3. Use Input Schemas for Validation
 
-```python
+   ```python
 from pydantic import BaseModel, Field
 
 class ValidatedInput(BaseModel):
@@ -484,28 +484,28 @@ async def generate(self, params: ValidatedInput):
 
 ### 4. Handle Errors Gracefully
 
-```python
+   ```python
 @chute.cord(public_api_path="/generate")
 async def generate(self, prompt: str):
-    if not prompt.strip():
+   if not prompt.strip():
         raise HTTPException(400, "Prompt cannot be empty")
     
     try:
         return await self.model.generate(prompt)
     except Exception as e:
         raise HTTPException(500, f"Generation failed: {e}")
-```
+   ```
 
 ### 5. Use Streaming for Long Operations
 
-```python
+   ```python
 @chute.cord(public_api_path="/generate", stream=True)
 async def stream_generate(self, prompt: str):
     async def stream():
         async for token in self.model.stream(prompt):
             yield f"data: {json.dumps({'token': token})}\n\n"
     return StreamingResponse(stream(), media_type="text/event-stream")
-```
+   ```
 
 ## See Also
 

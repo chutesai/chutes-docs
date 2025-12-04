@@ -354,11 +354,11 @@ import sys
 
 def run_command(command):
     """Run a chutes CLI command."""
-    result = subprocess.run(
-        f"chutes {command}".split(),
-        capture_output=True,
+        result = subprocess.run(
+            f"chutes {command}".split(),
+            capture_output=True,
         text=True
-    )
+        )
     if result.returncode != 0:
         print(f"Error: {result.stderr}")
         sys.exit(1)

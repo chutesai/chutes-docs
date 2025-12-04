@@ -89,11 +89,17 @@ node_selector = NodeSelector(
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+## Integrations
+
+Chutes integrates with popular AI frameworks to make development easier:
+
+- 🔗 **[Vercel AI SDK](integrations/vercel-ai-sdk)** - Use Chutes with the Vercel AI SDK for streaming, tool calling, and more
+
 ## Community & Support
 
 - 📖 **Documentation**: You're here!
 - 💬 **Discord**: [Join our community](https://discord.gg/wHrXwWkCRz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes)
 
 ---
 
