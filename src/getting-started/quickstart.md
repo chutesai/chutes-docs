@@ -16,19 +16,18 @@ Create a new file called `my_first_chute.py`:
 from chutes.chute import NodeSelector
 from chutes.chute.template.vllm import build_vllm_chute
 
-# Build a chute using the VLLM template
+    # Build a chute using the VLLM template
 chute = build_vllm_chute(
     username="your-username",  # Replace with your Chutes username
-    model_name="microsoft/DialoGPT-medium",
-    revision="main",  # Required: locks model to specific version
+    readme="## Meta Llama 3.2 1B Instruct\n### Hello.",
+    model_name="unsloth/Llama-3.2-1B-Instruct",
     node_selector=NodeSelector(
         gpu_count=1,
-        min_vram_gb_per_gpu=16
     ),
     concurrency=4,
     readme="""
     # My First Chute
-    A simple conversational AI powered by DialoGPT.
+    A simple conversational AI powered by Llama 3.2.
 
     ## Usage
     Send a POST request to `/v1/chat/completions` with your message.
@@ -87,7 +86,7 @@ Your chute is now live! Test it with a simple chat completion:
 curl -X POST https://your-username-my-first-chute.chutes.ai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "microsoft/DialoGPT-medium",
+    "model": "unsloth/Llama-3.2-1B-Instruct",
     "messages": [
       {"role": "user", "content": "Hello! How are you today?"}
     ],
@@ -107,7 +106,7 @@ async def chat_with_chute():
     url = "https://your-username-my-first-chute.chutes.ai/v1/chat/completions"
 
     payload = {
-        "model": "microsoft/DialoGPT-medium",
+        "model": "unsloth/Llama-3.2-1B-Instruct",
         "messages": [
             {"role": "user", "content": "Hello! How are you today?"}
         ],
@@ -136,7 +135,7 @@ chutes run my_first_chute:chute --dev
 curl -X POST http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "microsoft/DialoGPT-medium",
+    "model": "unsloth/Llama-3.2-1B-Instruct",
     "messages": [
       {"role": "user", "content": "Hello! How are you today?"}
     ],
@@ -179,11 +178,11 @@ Now that you have a working chute, explore more advanced features:
 
 ### 🎨 Try Different Models
 
-Replace `microsoft/DialoGPT-medium` with:
+Replace `unsloth/Llama-3.2-1B-Instruct` with:
 
-- `microsoft/DialoGPT-large` (requires more VRAM)
-- `facebook/blenderbot-400M-distill`
-- `google/flan-t5-base`
+- `unsloth/Llama-3.1-8B-Instruct` (requires more VRAM)
+- `deepseek-ai/DeepSeek-R1-Distill-Llama-8B`
+- `Qwen/Qwen2.5-7B-Instruct`
 
 ### 🔧 Customize Hardware
 
@@ -191,7 +190,7 @@ Adjust your `NodeSelector`:
 
 ```python
 NodeSelector(
-    gpu_count=2,           # Use 2 GPUs
+    gpu_count=1,           # Use 1 GPU
     min_vram_gb_per_gpu=24, # Require 24GB VRAM per GPU
     include=["a100", "h100"], # Prefer specific GPU types
     exclude=["k80"]        # Avoid older GPUs
@@ -244,7 +243,6 @@ A: Check the logs in the [Chutes Dashboard](https://chutes.ai) or use the CLI: `
 **Build failed?**
 
 - Check that your model name is correct
-- Ensure you have sufficient developer deposit
 - Try with a smaller model first
 
 **Deployment failed?**
@@ -261,11 +259,11 @@ A: Check the logs in the [Chutes Dashboard](https://chutes.ai) or use the CLI: `
 
 ## Get Help
 
-- 📖 **Detailed Guides**: Continue with [Your First Custom Chute](/docs/getting-started/first-chute)
+- 📖 **Detailed Guides**: Continue with [Your First Custom Chute](first-chute)
 - 💬 **Community**: [Join our Discord](https://discord.gg/wHrXwWkCRz)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
 - 📧 **Support**: `support@chutes.ai`
 
 ---
 
-Ready to build something more advanced? Check out [Your First Custom Chute](/docs/getting-started/first-chute) to learn how to build completely custom applications!
+Ready to build something more advanced? Check out [Your First Custom Chute](first-chute) to learn how to build completely custom applications!

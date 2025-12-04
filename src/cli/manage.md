@@ -1,6 +1,6 @@
 # Managing Resources
 
-This section covers CLI commands for managing your deployed chutes, monitoring performance, viewing logs, and controlling resources.
+This section covers CLI commands for managing your deployed chutes, images, API keys, and secrets.
 
 ## Chute Management
 
@@ -14,37 +14,38 @@ chutes chutes list [OPTIONS]
 
 **Options:**
 
-- `--format TEXT`: Output format (table, json, yaml)
-- `--filter TEXT`: Filter by name, status, or tag
-- `--limit INTEGER`: Maximum number of results
-- `--sort TEXT`: Sort by field (name, created, status)
+- `--name TEXT`: Filter by name
+- `--limit INTEGER`: Number of items per page (default: 25)
+- `--page INTEGER`: Page number (default: 0)
+- `--include-public`: Include public chutes in results
 
 **Examples:**
 
 ```bash
-# List all chutes
+# List all your chutes
 chutes chutes list
 
-# List with JSON output
-chutes chutes list --format json
+# Filter by name
+chutes chutes list --name sentiment
 
-# Filter by status
-chutes chutes list --filter status=running
-
-# Filter by name pattern
-chutes chutes list --filter name=*-prod
+# Include public chutes
+chutes chutes list --include-public --limit 50
 ```
 
 **Output:**
 
 ```
-┌─────────────────┬─────────────────────┬────────────┬─────────────────────┐
-│ Name            │ URL                 │ Status     │ Created             │
-├─────────────────┼─────────────────────┼────────────┼─────────────────────┤
-│ sentiment-api   │ myuser-sentiment... │ Running    │ 2024-01-15 10:30:00 │
-│ image-gen       │ myuser-image-gen... │ Running    │ 2024-01-20 14:45:00 │
-│ text-embeddings │ myuser-text-emb...  │ Stopped    │ 2024-01-25 09:15:00 │
-└─────────────────┴─────────────────────┴────────────┴─────────────────────┘
+┌─────────────────┬─────────────────────┬────────┬───────────────────────────────┐
+│ ID              │ Name                │ Status │ Cords                         │
+├─────────────────┼─────────────────────┼────────┼───────────────────────────────┤
+│ chute_abc123    │ sentiment-api       │ hot    │ analyze                       │
+│                 │                     │        │   stream=False                │
+│                 │                     │        │   POST /analyze               │
+├─────────────────┼─────────────────────┼────────┼───────────────────────────────┤
+│ chute_def456    │ image-gen           │ cold   │ generate                      │
+│                 │                     │        │   stream=True                 │
+│                 │                     │        │   POST /generate              │
+└─────────────────┴─────────────────────┴────────┴───────────────────────────────┘
 ```
 
 ### `chutes chutes get`
@@ -52,46 +53,35 @@ chutes chutes list --filter name=*-prod
 Get detailed information about a specific chute.
 
 ```bash
-chutes chutes get <chute_name> [OPTIONS]
+chutes chutes get <name_or_id>
 ```
 
 **Arguments:**
 
-- `chute_name`: Name of the chute
+- `name_or_id`: Name or UUID of the chute
 
-**Options:**
-
-- `--format TEXT`: Output format (table, json, yaml)
-- `--show-config`: Include configuration details
-- `--show-metrics`: Include performance metrics
-
-**Examples:**
+**Example:**
 
 ```bash
-# Basic chute information
 chutes chutes get my-chute
-
-# Detailed configuration
-chutes chutes get my-chute --show-config
-
-# Include performance metrics
-chutes chutes get my-chute --show-metrics
 ```
 
 **Output:**
 
-```
-Chute: my-chute
-├── Status: Running
-├── URL: https://myuser-my-chute.chutes.ai
-├── Instances: 2/2 ready
-├── Image: myuser/my-chute:v1.2.0
-├── GPU: 1x RTX4090 (24GB)
-├── CPU: 4 cores
-├── Memory: 16GB
-├── Created: 2024-01-15 10:30:00
-├── Last Deploy: 2024-01-20 14:45:00
-└── Health: Healthy (last check: 2 minutes ago)
+```json
+{
+  "chute_id": "abc123-def456-...",
+  "name": "my-chute",
+  "tagline": "My awesome AI chute",
+  "slug": "myuser/my-chute",
+  "hot": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "node_selector": {
+    "gpu_count": 1,
+    "min_vram_gb_per_gpu": 24
+  },
+  ...
+}
 ```
 
 ### `chutes chutes delete`
@@ -99,415 +89,235 @@ Chute: my-chute
 Delete a chute and all its resources.
 
 ```bash
-chutes chutes delete <chute_name> [OPTIONS]
+chutes chutes delete <name_or_id>
 ```
 
 **Arguments:**
 
-- `chute_name`: Name of the chute to delete
+- `name_or_id`: Name or UUID of the chute to delete
 
-**Options:**
-
-- `--yes`: Skip confirmation prompt
-- `--keep-image`: Keep the Docker image
-- `--force`: Force deletion even if chute is running
-
-**Examples:**
+**Example:**
 
 ```bash
-# Delete with confirmation
 chutes chutes delete old-chute
-
-# Force delete without confirmation
-chutes chutes delete old-chute --yes --force
-
-# Delete but keep the image
-chutes chutes delete old-chute --keep-image
 ```
 
-**⚠️ Warning:** Deletion is permanent and cannot be undone!
+**Confirmation:**
 
-## Logs and Monitoring
+```
+Are you sure you want to delete chutes/old-chute? This action is irreversible. (y/n): y
+Successfully deleted chute chute_abc123
+```
 
-### `chutes logs`
+> **⚠️ Warning:** Deletion is permanent and cannot be undone!
 
-View logs from your chute instances.
+## Image Management
+
+### `chutes images list`
+
+List all your Docker images.
 
 ```bash
-chutes logs <chute_name> [OPTIONS]
+chutes images list [OPTIONS]
 ```
 
 **Options:**
 
-- `--follow`: Stream logs in real-time
-- `--lines INTEGER`: Number of lines to show (default: 50)
-- `--since TEXT`: Show logs since timestamp
-- `--level TEXT`: Filter by log level (debug, info, warning, error)
-- `--instance TEXT`: Show logs from specific instance
-- `--download`: Download logs to file
+- `--name TEXT`: Filter by name
+- `--limit INTEGER`: Number of items per page (default: 25)
+- `--page INTEGER`: Page number (default: 0)
+- `--include-public`: Include public images in results
 
 **Examples:**
 
 ```bash
-# View recent logs
-chutes logs my-chute
+# List all your images
+chutes images list
 
-# Follow logs in real-time
-chutes logs my-chute --follow
+# Filter by name
+chutes images list --name my-app
 
-# Show last 100 lines
-chutes logs my-chute --lines 100
-
-# Show logs from last hour
-chutes logs my-chute --since 1h
-
-# Filter error logs only
-chutes logs my-chute --level error
-
-# Download logs to file
-chutes logs my-chute --download --since 24h
+# Include public images
+chutes images list --include-public
 ```
 
-### `chutes metrics`
+**Output:**
 
-View performance metrics for your chutes.
+```
+┌─────────────────┬─────────────────┬─────────┬──────────────────┬─────────────────────┐
+│ ID              │ Name            │ Tag     │ Status           │ Created             │
+├─────────────────┼─────────────────┼─────────┼──────────────────┼─────────────────────┤
+│ img_abc123      │ sentiment-api   │ 1.0     │ built and pushed │ 2024-01-15 10:30:00 │
+│ img_def456      │ image-gen       │ 2.1     │ built and pushed │ 2024-01-20 14:45:00 │
+│ img_ghi789      │ test-app        │ dev     │ building         │ 2024-01-25 09:15:00 │
+└─────────────────┴─────────────────┴─────────┴──────────────────┴─────────────────────┘
+```
+
+### `chutes images get`
+
+Get detailed information about a specific image.
 
 ```bash
-chutes metrics <chute_name> [OPTIONS]
-```
-
-**Options:**
-
-- `--metric TEXT`: Specific metric (cpu, memory, gpu, requests)
-- `--timeframe TEXT`: Time range (1h, 24h, 7d, 30d)
-- `--format TEXT`: Output format (table, json, graph)
-- `--export TEXT`: Export to file
-
-**Examples:**
-
-```bash
-# Overview of all metrics
-chutes metrics my-chute
-
-# CPU usage over last 24 hours
-chutes metrics my-chute --metric cpu --timeframe 24h
-
-# GPU utilization with graph
-chutes metrics my-chute --metric gpu --format graph
-
-# Export metrics to CSV
-chutes metrics my-chute --export metrics.csv --timeframe 7d
-```
-
-**Sample Output:**
-
-```
-Metrics for my-chute (Last 24 hours)
-┌──────────────┬─────────┬─────────┬─────────┬─────────┐
-│ Metric       │ Current │ Average │ Peak    │ Min     │
-├──────────────┼─────────┼─────────┼─────────┼─────────┤
-│ CPU Usage    │ 45%     │ 38%     │ 82%     │ 12%     │
-│ Memory Usage │ 12GB    │ 10GB    │ 15GB    │ 8GB     │
-│ GPU Usage    │ 78%     │ 65%     │ 95%     │ 23%     │
-│ Requests/sec │ 12.5    │ 8.3     │ 45.2    │ 0.1     │
-│ Response Time│ 245ms   │ 198ms   │ 1.2s    │ 89ms    │
-└──────────────┴─────────┴─────────┴─────────┴─────────┘
-```
-
-### `chutes status`
-
-Quick status check for all or specific chutes.
-
-```bash
-chutes status [chute_name] [OPTIONS]
-```
-
-**Options:**
-
-- `--watch`: Continuously monitor status
-- `--refresh INTEGER`: Refresh interval in seconds
-- `--alerts`: Show any active alerts
-
-**Examples:**
-
-```bash
-# Status of all chutes
-chutes status
-
-# Status of specific chute
-chutes status my-chute
-
-# Watch status with auto-refresh
-chutes status --watch --refresh 5
-
-# Show status with alerts
-chutes status --alerts
-```
-
-## Scaling Operations
-
-### `chutes scale`
-
-Scale your chute instances up or down.
-
-```bash
-chutes scale <chute_name> <instances> [OPTIONS]
+chutes images get <name_or_id>
 ```
 
 **Arguments:**
 
-- `chute_name`: Name of the chute
-- `instances`: Target number of instances
+- `name_or_id`: Name or UUID of the image
+
+**Example:**
+
+```bash
+chutes images get my-app
+```
+
+### `chutes images delete`
+
+Delete an image.
+
+```bash
+chutes images delete <name_or_id>
+```
+
+**Arguments:**
+
+- `name_or_id`: Name or UUID of the image to delete
+
+**Example:**
+
+```bash
+chutes images delete old-image:1.0
+```
+
+> **Note:** You cannot delete images that are currently in use by deployed chutes.
+
+## Sharing Chutes
+
+### `chutes share`
+
+Share a chute with another user or remove sharing.
+
+```bash
+chutes share [OPTIONS]
+```
 
 **Options:**
 
-- `--wait`: Wait for scaling to complete
-- `--timeout INTEGER`: Timeout in seconds
-- `--strategy TEXT`: Scaling strategy (immediate, rolling)
+- `--chute-id TEXT`: The chute UUID or name to share (required)
+- `--user-id TEXT`: The user UUID or username to share with (required)
+- `--config-path TEXT`: Custom config path
+- `--remove`: Remove sharing instead of adding
 
 **Examples:**
 
 ```bash
-# Scale up to 3 instances
-chutes scale my-chute 3 --wait
+# Share a chute with another user
+chutes share --chute-id my-chute --user-id colleague
 
-# Scale down to 1 instance
-chutes scale my-chute 1
+# Share by UUIDs
+chutes share --chute-id abc123-def456 --user-id user789-xyz
 
-# Rolling scale with timeout
-chutes scale my-chute 5 --strategy rolling --timeout 300
+# Remove sharing
+chutes share --chute-id my-chute --user-id colleague --remove
 ```
 
-### `chutes autoscale`
+### Sharing and Billing
 
-Configure automatic scaling for your chute.
+When you share a chute:
+
+- **Chute Owner**: Pays the hourly compute rate while instances are running
+- **Shared User**: Pays the standard invocation rate (per token, per step, etc.)
+
+This allows you to provide access to your deployed models while sharing the costs appropriately.
+
+## Warming Up Chutes
+
+### `chutes warmup`
+
+Warm up a chute to ensure an instance is ready to handle requests.
 
 ```bash
-chutes autoscale <chute_name> [OPTIONS]
+chutes warmup <chute_id_or_ref> [OPTIONS]
 ```
+
+**Arguments:**
+
+- `chute_id_or_ref`: The chute UUID, name, or file reference (`filename:chutevarname`)
 
 **Options:**
 
-- `--min INTEGER`: Minimum instances
-- `--max INTEGER`: Maximum instances
-- `--cpu-target INTEGER`: Target CPU utilization (%)
-- `--memory-target INTEGER`: Target memory utilization (%)
-- `--requests-per-second INTEGER`: Target requests per second
-- `--enable/--disable`: Enable or disable autoscaling
+- `--config-path TEXT`: Custom config path
+- `--debug`: Enable debug logging
 
 **Examples:**
 
 ```bash
-# Enable autoscaling
-chutes autoscale my-chute --min 1 --max 10 --cpu-target 70
+# Warm up by name
+chutes warmup my-chute
 
-# Configure based on requests
-chutes autoscale my-chute --min 2 --max 8 --requests-per-second 50
+# Warm up by UUID
+chutes warmup abc123-def456
 
-# Disable autoscaling
-chutes autoscale my-chute --disable
+# Warm up from file reference
+chutes warmup my_chute:chute
 ```
 
-## Resource Management
+**Output:**
 
-### `chutes resources`
-
-View and manage resource usage.
-
-```bash
-chutes resources [SUBCOMMAND] [OPTIONS]
+```
+Status: cold -- Starting instance...
+Status: warming -- Loading model...
+Status: hot -- Instance is ready!
 ```
 
-**Subcommands:**
+Use warmup to reduce latency for the first request to a cold chute.
 
-- `usage`: Show current resource usage
-- `limits`: Show account limits
-- `costs`: Show cost breakdown
-- `forecast`: Predict future costs
+## Common Workflows
 
-**Examples:**
+### Deploying Updates
 
 ```bash
-# Current resource usage
-chutes resources usage
+# 1. Build new image
+chutes build my_chute:chute --wait
 
-# Account limits
-chutes resources limits
+# 2. Delete old chute (if needed)
+chutes chutes delete my-chute
 
-# Cost breakdown by chute
-chutes resources costs --breakdown
+# 3. Deploy new version
+chutes deploy my_chute:chute --accept-fee
 
-# 30-day cost forecast
-chutes resources forecast --days 30
+# 4. Warm up
+chutes warmup my-chute
 ```
 
-### `chutes images`
-
-Manage your Docker images.
+### Cleaning Up Resources
 
 ```bash
-chutes images [SUBCOMMAND] [OPTIONS]
-```
+# List all chutes
+chutes chutes list
 
-**Subcommands:**
+# Delete unused chutes
+chutes chutes delete old-chute-1
+chutes chutes delete old-chute-2
 
-- `list`: List all images
-- `get`: Get image details
-- `delete`: Delete an image
-- `prune`: Remove unused images
-
-**Examples:**
-
-```bash
 # List all images
 chutes images list
 
-# Get image details
-chutes images get myuser/my-chute:v1.2.0
-
-# Delete old image
-chutes images delete myuser/my-chute:v1.0.0
-
-# Clean up unused images
-chutes images prune --older-than 30d
+# Delete unused images
+chutes images delete old-image:1.0
+chutes images delete test-image:dev
 ```
 
-## Environment Management
-
-### `chutes env`
-
-Manage environment variables for your chutes.
+### Sharing with Team Members
 
 ```bash
-chutes env <chute_name> [SUBCOMMAND] [OPTIONS]
-```
+# Share with multiple users
+chutes share --chute-id my-model --user-id alice
+chutes share --chute-id my-model --user-id bob
+chutes share --chute-id my-model --user-id charlie
 
-**Subcommands:**
-
-- `list`: List environment variables
-- `set`: Set environment variable
-- `unset`: Remove environment variable
-- `import`: Import from file
-
-**Examples:**
-
-```bash
-# List current environment variables
-chutes env my-chute list
-
-# Set environment variable
-chutes env my-chute set DEBUG=true
-
-# Import from file
-chutes env my-chute import --file production.env
-
-# Remove environment variable
-chutes env my-chute unset DEBUG
-```
-
-## Health and Diagnostics
-
-### `chutes health`
-
-Check health status of your chutes.
-
-```bash
-chutes health <chute_name> [OPTIONS]
-```
-
-**Options:**
-
-- `--detailed`: Show detailed health information
-- `--history`: Show health check history
-- `--alerts`: Show health-related alerts
-
-**Examples:**
-
-```bash
-# Basic health check
-chutes health my-chute
-
-# Detailed health information
-chutes health my-chute --detailed
-
-# Health check history
-chutes health my-chute --history --days 7
-```
-
-### `chutes debug`
-
-Debug issues with your chutes.
-
-```bash
-chutes debug <chute_name> [OPTIONS]
-```
-
-**Options:**
-
-- `--component TEXT`: Focus on specific component
-- `--export`: Export debug information
-- `--verbose`: Verbose output
-
-**Examples:**
-
-```bash
-# General debug information
-chutes debug my-chute
-
-# Debug specific component
-chutes debug my-chute --component networking
-
-# Export debug bundle
-chutes debug my-chute --export debug-bundle.zip
-```
-
-## Backup and Recovery
-
-### `chutes backup`
-
-Create backups of your chute configurations.
-
-```bash
-chutes backup <chute_name> [OPTIONS]
-```
-
-**Options:**
-
-- `--include-data`: Include persistent data
-- `--output TEXT`: Output file path
-- `--compress`: Compress backup
-
-**Examples:**
-
-```bash
-# Backup configuration
-chutes backup my-chute --output my-chute-backup.json
-
-# Full backup with data
-chutes backup my-chute --include-data --compress
-```
-
-### `chutes restore`
-
-Restore chute from backup.
-
-```bash
-chutes restore <backup_file> [OPTIONS]
-```
-
-**Options:**
-
-- `--name TEXT`: New chute name
-- `--force`: Overwrite existing chute
-
-**Examples:**
-
-```bash
-# Restore from backup
-chutes restore my-chute-backup.json
-
-# Restore with new name
-chutes restore my-chute-backup.json --name my-chute-restored
+# Later, remove access
+chutes share --chute-id my-model --user-id bob --remove
 ```
 
 ## Automation and Scripting
@@ -517,36 +327,22 @@ chutes restore my-chute-backup.json --name my-chute-restored
 ```bash
 #!/bin/bash
 
-# Health check script
-check_chute_health() {
-    local chute_name=$1
+# Deploy and warm up script
+set -e
 
-    echo "Checking health of $chute_name..."
+CHUTE_REF="my_chute:chute"
+CHUTE_NAME="my-chute"
 
-    # Get chute status
-    status=$(chutes chutes get $chute_name --format json | jq -r '.status')
+echo "Building image..."
+chutes build $CHUTE_REF --wait
 
-    if [ "$status" != "Running" ]; then
-        echo "ERROR: Chute $chute_name is $status"
-        return 1
-    fi
+echo "Deploying chute..."
+chutes deploy $CHUTE_REF --accept-fee
 
-    # Check health endpoint
-    health=$(chutes health $chute_name --format json | jq -r '.healthy')
+echo "Warming up..."
+chutes warmup $CHUTE_NAME
 
-    if [ "$health" != "true" ]; then
-        echo "ERROR: Chute $chute_name health check failed"
-        return 1
-    fi
-
-    echo "SUCCESS: Chute $chute_name is healthy"
-    return 0
-}
-
-# Check all chutes
-chutes chutes list --format json | jq -r '.[].name' | while read chute; do
-    check_chute_health $chute
-done
+echo "Deployment complete!"
 ```
 
 ### Python Scripting
@@ -554,173 +350,133 @@ done
 ```python
 #!/usr/bin/env python3
 import subprocess
-import json
 import sys
 
-def run_chutes_command(command):
-    """Run chutes CLI command and return JSON output."""
-    try:
-        result = subprocess.run(
-            f"chutes {command}".split(),
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed: {e}")
-        return None
+def run_command(command):
+    """Run a chutes CLI command."""
+    result = subprocess.run(
+        f"chutes {command}".split(),
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}")
+        sys.exit(1)
+    return result.stdout
 
-def monitor_chutes():
-    """Monitor all chutes and alert on issues."""
-    chutes = run_chutes_command("chutes list --format json")
-
-    if not chutes:
-        print("Failed to get chute list")
-        return
-
-    for chute in chutes:
-        name = chute['name']
-        status = chute['status']
-
-        if status != 'Running':
-            print(f"ALERT: {name} is {status}")
-            continue
-
-        # Check metrics
-        metrics = run_chutes_command(f"metrics {name} --format json")
-        if metrics:
-            cpu = metrics.get('cpu_usage', 0)
-            memory = metrics.get('memory_usage', 0)
-
-            if cpu > 90:
-                print(f"ALERT: {name} high CPU usage: {cpu}%")
-            if memory > 90:
-                print(f"ALERT: {name} high memory usage: {memory}%")
+def main():
+    # List all chutes
+    print("Your chutes:")
+    output = run_command("chutes list")
+    print(output)
+    
+    # Check specific chute
+    print("\nChute details:")
+    output = run_command("chutes get my-chute")
+    print(output)
 
 if __name__ == "__main__":
-    monitor_chutes()
-```
-
-## Performance Optimization
-
-### Resource Right-Sizing
-
-```bash
-# Analyze resource usage
-chutes metrics my-chute --timeframe 7d --export analysis.csv
-
-# Find optimal instance count
-python analyze_usage.py analysis.csv
-
-# Apply optimizations
-chutes scale my-chute 3
-chutes autoscale my-chute --min 2 --max 6 --cpu-target 65
-```
-
-### Cost Optimization
-
-```bash
-# Review costs
-chutes resources costs --breakdown --timeframe 30d
-
-# Identify expensive chutes
-chutes resources costs --sort-by cost --limit 10
-
-# Optimize based on usage
-chutes resources optimize --suggestions
+    main()
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Chute not responding?**
+**Chute not found?**
 
 ```bash
-# Check chute status
+# Check exact name/ID
+chutes chutes list
+
+# Use the exact name or UUID from the list
+chutes chutes get exact-chute-name
+```
+
+**Cannot delete chute?**
+
+The deletion requires confirmation. Type `y` when prompted:
+
+```bash
+chutes chutes delete my-chute
+# Are you sure you want to delete chutes/my-chute? This action is irreversible. (y/n): y
+```
+
+**Image status not "built and pushed"?**
+
+```bash
+# Check image status
+chutes images get my-image
+
+# If status is "building", wait for build to complete
+# If status shows an error, rebuild the image
+chutes build my_chute:chute --wait
+```
+
+**Warmup fails?**
+
+```bash
+# Enable debug logging
+chutes warmup my-chute --debug
+
+# Check chute exists
 chutes chutes get my-chute
-
-# View recent logs
-chutes logs my-chute --level error --lines 50
-
-# Check health
-chutes health my-chute --detailed
-
-# Restart if needed
-chutes restart my-chute
-```
-
-**High resource usage?**
-
-```bash
-# Check metrics
-chutes metrics my-chute --metric cpu,memory,gpu
-
-# View top consumers
-chutes resources usage --top 5
-
-# Scale if needed
-chutes scale my-chute 3
-```
-
-**Deployment issues?**
-
-```bash
-# Check deployment status
-chutes deployments status my-chute
-
-# View deployment logs
-chutes logs my-chute --since deploy
-
-# Debug deployment
-chutes debug my-chute --component deployment
 ```
 
 ## Best Practices
 
-### 1. **Regular Monitoring**
+### 1. Regular Cleanup
+
+Periodically review and delete unused resources:
 
 ```bash
-# Daily health checks
-chutes health --all
+# Review chutes
+chutes chutes list
 
-# Weekly resource review
-chutes resources usage --timeframe 7d
+# Review images
+chutes images list
 
-# Monthly cost analysis
-chutes resources costs --breakdown --timeframe 30d
+# Delete what you no longer need
+chutes chutes delete unused-chute
+chutes images delete old-image:tag
 ```
 
-### 2. **Log Management**
+### 2. Use Descriptive Names
 
-```bash
-# Regular log cleanup
-chutes logs my-chute --download --since 7d
-chutes logs my-chute --prune --older-than 30d
+Name your chutes and images clearly:
 
-# Set up log forwarding
-chutes logs my-chute --forward --endpoint https://logs.mycompany.com
+```
+# Good
+sentiment-analyzer-bert-v2
+image-gen-sdxl-1.0
+llm-llama3-8b-instruct
+
+# Not as good
+test1
+my-app
+chute
 ```
 
-### 3. **Backup Strategy**
+### 3. Warm Up Before Critical Usage
+
+If you need low latency, warm up your chute before sending requests:
 
 ```bash
-# Weekly configuration backups
-chutes backup my-chute --output "backup-$(date +%Y%m%d).json"
-
-# Automated backup script
-0 2 * * 0 /usr/local/bin/backup-chutes.sh
+chutes warmup my-chute
+# Wait for "hot" status
+# Then send your requests
 ```
 
-### 4. **Performance Tuning**
+### 4. Share Instead of Making Public
+
+For most use cases, sharing with specific users is better than making chutes public:
 
 ```bash
-# Monitor and adjust autoscaling
-chutes autoscale my-chute --cpu-target 70 --memory-target 80
+# Better: Share with specific users
+chutes share --chute-id my-chute --user-id trusted-user
 
-# Regular performance reviews
-chutes metrics my-chute --export monthly-$(date +%Y%m).csv
+# Only if needed: Deploy as public (requires permissions)
+chutes deploy my_chute:chute --public --accept-fee
 ```
 
 ## Next Steps

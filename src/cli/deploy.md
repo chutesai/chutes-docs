@@ -19,62 +19,47 @@ chutes deploy <chute_ref> [OPTIONS]
 **Options:**
 
 - `--config-path TEXT`: Custom config path
-- `--logo TEXT`: Path to logo image
+- `--logo TEXT`: Path to logo image for the chute
 - `--debug`: Enable debug logging
-- `--public`: Mark chute as public
-- `--tag TEXT`: Specific image tag to deploy
-- `--wait`: Wait for deployment to complete
-- `--env-file TEXT`: Environment variables file
-- `--scale INTEGER`: Initial number of instances
+- `--public`: Mark chute as public/available to anyone
+- `--accept-fee`: Acknowledge and accept the deployment fee
 
 ## Deployment Examples
 
 ### Basic Deployment
 
 ```bash
-# Deploy latest built image
-chutes deploy my_chute:chute
+# Deploy with fee acknowledgment
+chutes deploy my_chute:chute --accept-fee
 ```
 
 **What happens:**
 
-- ✅ Validates image exists
+- ✅ Validates image exists and is built
 - ✅ Creates deployment configuration
-- ✅ Provisions GPU resources
-- ✅ Starts your chute
-- ✅ Returns public URL
+- ✅ Registers chute with the platform
+- ✅ Returns chute ID and version
 
 ### Production Deployment
 
 ```bash
-# Deploy specific version with logo
+# Deploy with logo
 chutes deploy my_chute:chute \
-  --tag v1.2.0 \
   --logo ./assets/logo.png \
-  --public \
-  --wait
+  --accept-fee
 ```
 
-### Deployment with Environment Variables
+### Private vs Public Deployments
 
 ```bash
-# Create environment file
-cat > .env << EOF
-MODEL_PATH=/app/models/custom
-DEBUG_MODE=false
-API_TIMEOUT=30
-EOF
+# Private deployment (default) - only you can access
+chutes deploy my_chute:chute --accept-fee
 
-# Deploy with environment
-chutes deploy my_chute:chute --env-file .env
+# Public deployment (requires special permissions)
+chutes deploy my_chute:chute --public --accept-fee
 ```
 
-### Scaled Deployment
-
-```bash
-# Deploy with multiple instances
-chutes deploy my_chute:chute --scale 3 --wait
-```
+> **Note:** Public chutes require special permissions. If you need to share your chute, use the `chutes share` command instead.
 
 ## Deployment Process
 
@@ -83,297 +68,214 @@ chutes deploy my_chute:chute --scale 3 --wait
 ```bash
 # Example deployment output
 Deploying chute: my_chute:chute
-✓ Validating image
-✓ Creating deployment
-✓ Provisioning resources
-✓ Starting instances
-✓ Health checks passing
-✓ Configuring networking
-✓ Enabling auto-scaling
-
-Deployment successful!
-🌐 URL: https://myuser-my-chute.chutes.ai
-📋 Chute ID: 12345678-1234-5678-9abc-123456789012
-📊 Status: Running (1/1 instances)
+You are about to upload my_chute.py and deploy my-chute, confirm? (y/n) y
+Successfully deployed chute my-chute chute_id=abc123 version=1
 ```
 
-### Resource Allocation
+### What Gets Deployed
 
-During deployment, Chutes:
+When you deploy, the following is sent to the platform:
 
-1. **Analyzes Requirements**: Reads your `NodeSelector` configuration
-2. **Finds Available Hardware**: Matches your requirements to available GPUs
-3. **Provisions Resources**: Allocates GPU, CPU, and memory
-4. **Network Setup**: Creates load balancer and SSL certificates
-5. **Health Monitoring**: Sets up health checks and monitoring
+- **Chute Configuration**: Name, readme, tagline
+- **Node Selector**: GPU requirements
+- **Cords**: API endpoints your chute exposes
+- **Code Reference**: Your chute's Python code
+- **Image Reference**: The built image to use
 
-## Advanced Deployment Options
+## Deployment Fees
 
-### Environment Configuration
+Deployment incurs a one-time fee based on your NodeSelector configuration:
 
 ```bash
-# Method 1: Environment file
-cat > production.env << EOF
-# Model configuration
-MODEL_NAME=microsoft/DialoGPT-medium
-MODEL_REVISION=main
-BATCH_SIZE=16
-
-# Performance tuning
-GPU_MEMORY_FRACTION=0.9
-ENABLE_MIXED_PRECISION=true
-
-# Monitoring
-LOG_LEVEL=INFO
-METRICS_ENABLED=true
-EOF
-
-chutes deploy my_chute:chute --env-file production.env
+# Deploy and acknowledge the fee
+chutes deploy my_chute:chute --accept-fee
 ```
+
+If you don't include `--accept-fee`, you may receive a 402 error indicating the deployment fee needs to be acknowledged.
+
+### Fee Structure
+
+Deployment fees are calculated based on:
+- **GPU Type**: Higher-end GPUs cost more
+- **GPU Count**: More GPUs = higher fee
+- **VRAM Requirements**: Higher VRAM requirements cost more
+
+Example fee calculation:
+- Single RTX 3090 at $0.12/hr = $0.36 deployment fee
+- Multiple GPUs or premium GPUs will have higher fees
+
+## Pre-Deployment Checklist
+
+Before deploying, ensure:
+
+### 1. Image is Built and Ready
 
 ```bash
-# Method 2: Direct environment variables
-export MODEL_NAME=microsoft/DialoGPT-medium
-export BATCH_SIZE=16
-chutes deploy my_chute:chute
+# Check image status
+chutes images list --name my-image
+chutes images get my-image
+
+# Should show status: "built and pushed"
 ```
 
-### Public vs Private Deployments
-
-```bash
-# Private deployment (default)
-chutes deploy my_chute:chute
-
-# Public deployment (visible in marketplace)
-chutes deploy my_chute:chute --public
-```
-
-**Public Deployment Benefits:**
-
-- 📈 Marketplace visibility
-- 👥 Community discovery
-- 💰 Potential revenue sharing
-- 🏆 Featured deployment opportunities
-
-### Blue-Green Deployments
-
-```bash
-# Deploy new version alongside existing
-chutes deploy my_chute:chute --tag v2.0.0 --alias green
-
-# Test new version
-curl https://myuser-my-chute-green.chutes.ai/health
-
-# Switch traffic to new version
-chutes deployments switch my_chute green
-
-# Remove old version
-chutes deployments remove my_chute blue
-```
-
-## Deployment Strategies
-
-### Rolling Updates
-
-```bash
-# Update existing deployment
-chutes deploy my_chute:chute --tag v1.1.0 --strategy rolling
-
-# Monitor rollout
-chutes deployments status my_chute --watch
-```
-
-### Canary Deployments
-
-```bash
-# Deploy canary with 10% traffic
-chutes deploy my_chute:chute --tag v2.0.0 --canary 10
-
-# Monitor metrics
-chutes metrics get my_chute --version v2.0.0
-
-# Increase traffic if successful
-chutes deployments promote my_chute --traffic 50
-
-# Complete rollout
-chutes deployments promote my_chute --traffic 100
-```
-
-### A/B Testing
-
-```bash
-# Deploy variant B
-chutes deploy my_chute:chute --tag variant-b --variant b
-
-# Configure traffic split
-chutes deployments split my_chute --a 50 --b 50
-
-# Monitor performance
-chutes analytics compare my_chute --variants a,b
-```
-
-## Scaling and Performance
-
-### Auto-scaling Configuration
+### 2. Chute Configuration is Correct
 
 ```python
-# In your chute definition
+# Verify your chute definition
+from chutes.chute import Chute, NodeSelector
+
 chute = Chute(
     username="myuser",
     name="my-chute",
-    # Auto-scaling settings
-    concurrency=4,  # Requests per instance
-    min_instances=1,
-    max_instances=10,
-    scale_up_threshold=0.8,  # CPU utilization
-    scale_down_threshold=0.2
+    tagline="My awesome AI chute",
+    readme="## My Chute\n\nDescription here...",
+    image=my_image,
+    concurrency=4,
+    node_selector=NodeSelector(
+        gpu_count=1,
+        min_vram_gb_per_gpu=16,
+    ),
 )
 ```
 
-### Manual Scaling
+### 3. Cords are Defined
 
-```bash
-# Scale up to handle more traffic
-chutes deployments scale my_chute --instances 5
+```python
+@chute.cord()
+async def my_function(self, input_data: str) -> str:
+    return f"Processed: {input_data}"
 
-# Scale down to reduce costs
-chutes deployments scale my_chute --instances 2
-
-# Auto-scale based on metrics
-chutes deployments autoscale my_chute \
-  --min 1 --max 10 \
-  --cpu-target 70 \
-  --memory-target 80
+@chute.cord(
+    public_api_path="/generate",
+    public_api_method="POST",
+)
+async def generate(self, prompt: str) -> str:
+    # Your logic here
+    return result
 ```
 
-### Performance Monitoring
+## Chute Configuration Options
 
-```bash
-# Real-time metrics
-chutes metrics live my_chute
+### NodeSelector
 
-# Historical performance
-chutes metrics history my_chute --days 7
+Control which GPUs your chute runs on:
 
-# Custom alerts
-chutes alerts create my_chute \
-  --metric response_time \
-  --threshold 1000ms \
-  --email `alerts@mycompany.com`
+```python
+from chutes.chute import NodeSelector
+
+node_selector = NodeSelector(
+    gpu_count=1,              # Number of GPUs (1-8)
+    min_vram_gb_per_gpu=16,   # Minimum VRAM per GPU (16-80)
+    include=["rtx4090"],      # Only use these GPU types
+    exclude=["rtx3090"],      # Don't use these GPU types
+)
 ```
 
-## Deployment Management
+### Concurrency
 
-### Checking Deployment Status
+Set how many concurrent requests your chute can handle:
 
-```bash
-# Quick status check
-chutes deployments status my_chute
-
-# Detailed information
-chutes deployments get my_chute --detailed
-
-# Watch real-time updates
-chutes deployments logs my_chute --follow
+```python
+chute = Chute(
+    ...
+    concurrency=4,  # Handle 4 concurrent requests per instance
+)
 ```
 
-### Deployment History
+### Auto-Scaling
 
-```bash
-# List all deployments
-chutes deployments list
+Configure automatic scaling behavior:
 
-# Show deployment history for specific chute
-chutes deployments history my_chute
-
-# Get details of specific deployment
-chutes deployments get my_chute --version v1.2.0
+```python
+chute = Chute(
+    ...
+    max_instances=10,           # Maximum number of instances
+    scaling_threshold=0.8,      # Scale up threshold
+    shutdown_after_seconds=300, # Shutdown idle instances after 5 minutes
+)
 ```
 
-### Rollback Deployments
+### Network Egress
+
+Control external network access:
+
+```python
+chute = Chute(
+    ...
+    allow_external_egress=True,  # Allow external network access
+)
+```
+
+> **Note:** By default, `allow_external_egress` is **true** for custom chutes but **false** for vllm/sglang templates. Set to `True` if your chute needs to fetch external resources (e.g., image URLs for vision models).
+
+## Sharing Chutes
+
+After deployment, you can share your chute with other users:
 
 ```bash
-# Rollback to previous version
-chutes deployments rollback my_chute
+# Share with another user
+chutes share --chute-id my-chute --user-id colleague
 
-# Rollback to specific version
-chutes deployments rollback my_chute --to v1.1.0
-
-# Emergency rollback (immediate)
-chutes deployments rollback my_chute --emergency
+# Remove sharing
+chutes share --chute-id my-chute --user-id colleague --remove
 ```
+
+### Billing When Sharing
+
+When you share a chute:
+- **You** (chute owner) pay the hourly rate while instances are running
+- **The user you shared with** pays the standard usage rate (per token, per step, etc.)
 
 ## Troubleshooting Deployments
 
 ### Common Deployment Issues
 
-**Deployment fails with "Image not found"?**
+**"Image is not available to be used (yet)!"**
 
 ```bash
-# Check if image was built
-chutes images list | grep my_chute
+# Image hasn't finished building - check status
+chutes images get my-image
 
-# Build if missing
-chutes build my_chute:chute --wait
-
-# Verify image tag
-chutes images get my_chute:latest
+# Wait for status: "built and pushed"
 ```
 
-**Deployment stuck in "Pending" state?**
+**"Unable to create public chutes from non-public images"**
 
 ```bash
-# Check resource availability
-chutes resources availability
-
-# View deployment events
-chutes deployments events my_chute
-
-# Check node requirements
-chutes deployments describe my_chute
+# If deploying public chute, image must also be public
+# Rebuild image with --public flag
+chutes build my_chute:chute --public --wait
 ```
 
-**Health checks failing?**
+**402 Payment Required**
 
 ```bash
-# Check chute logs
-chutes deployments logs my_chute
-
-# Test health endpoint locally
-chutes run my_chute:chute --local
-curl localhost:8000/health
-
-# Verify health check configuration
-chutes deployments health my_chute
+# Include --accept-fee flag
+chutes deploy my_chute:chute --accept-fee
 ```
 
-**High latency or timeouts?**
+**409 Conflict**
 
 ```bash
-# Check instance count
-chutes deployments status my_chute
+# Chute with this name already exists
+# Delete existing chute first
+chutes chutes delete my-chute
 
-# Monitor performance
-chutes metrics get my_chute --metric response_time
-
-# Scale up if needed
-chutes deployments scale my_chute --instances 3
+# Or use a different name in your chute definition
 ```
 
 ### Debug Commands
 
 ```bash
-# Detailed deployment logs
-chutes deployments logs my_chute --debug --lines 100
+# Enable debug logging
+chutes deploy my_chute:chute --debug --accept-fee
 
-# Resource utilization
-chutes deployments resources my_chute
+# Check existing chutes
+chutes chutes list
+chutes chutes get my-chute
 
-# Network connectivity test
-chutes deployments ping my_chute
-
-# Container inspection
-chutes deployments exec my_chute -- ps aux
+# Check image status
+chutes images get my-image
 ```
 
 ## CI/CD Integration
@@ -384,33 +286,33 @@ chutes deployments exec my_chute -- ps aux
 name: Deploy to Chutes
 on:
   push:
-    tags: ['v*']
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Install Chutes
         run: pip install chutes
 
       - name: Configure Chutes
         env:
-          CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
+          CHUTES_CONFIG: ${{ secrets.CHUTES_CONFIG }}
         run: |
           mkdir -p ~/.chutes
-          echo "[auth]" > ~/.chutes/config.ini
-          echo "api_key = $CHUTES_API_KEY" >> ~/.chutes/config.ini
+          echo "$CHUTES_CONFIG" > ~/.chutes/config.ini
 
-      - name: Deploy
+      - name: Build and Deploy
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          chutes deploy my_app:chute --tag $VERSION --wait
-
-          # Health check
-          sleep 30
-          curl -f https://myuser-my-app.chutes.ai/health
+          chutes build my_app:chute --wait
+          chutes deploy my_app:chute --accept-fee
 ```
 
 ### GitLab CI
@@ -420,49 +322,12 @@ deploy:
   stage: deploy
   script:
     - pip install chutes
-    - echo "[auth]" > ~/.chutes/config.ini
-    - echo "api_key = $CHUTES_API_KEY" >> ~/.chutes/config.ini
-    - chutes deploy my_app:chute --tag $CI_COMMIT_TAG --wait
+    - mkdir -p ~/.chutes
+    - echo "$CHUTES_CONFIG" > ~/.chutes/config.ini
+    - chutes build my_app:chute --wait
+    - chutes deploy my_app:chute --accept-fee
   only:
-    - tags
-  environment:
-    name: production
-    url: https://myuser-my-app.chutes.ai
-```
-
-### Jenkins Pipeline
-
-```groovy
-pipeline {
-    agent any
-
-    environment {
-        CHUTES_API_KEY = credentials('chutes-api-key')
-    }
-
-    stages {
-        stage('Deploy') {
-            steps {
-                sh '''
-                    pip install chutes
-                    mkdir -p ~/.chutes
-                    echo "[auth]" > ~/.chutes/config.ini
-                    echo "api_key = $CHUTES_API_KEY" >> ~/.chutes/config.ini
-                    chutes deploy my_app:chute --tag $BUILD_NUMBER --wait
-                '''
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                sh '''
-                    sleep 30
-                    curl -f https://myuser-my-app.chutes.ai/health
-                '''
-            }
-        }
-    }
-}
+    - main
 ```
 
 ## Production Deployment Checklist
@@ -470,105 +335,91 @@ pipeline {
 ### Pre-Deployment
 
 ```bash
-# ✅ Run tests
+# ✅ Run tests locally
 python -m pytest tests/
 
-# ✅ Build and test image
+# ✅ Build image and verify
 chutes build my_chute:chute --wait
-chutes run my_chute:chute --local
+chutes images get my-chute
 
-# ✅ Check resource requirements
-chutes resources estimate my_chute:chute
-
-# ✅ Validate configuration
-chutes config validate my_chute:chute
+# ✅ Test locally if possible
+docker run --rm -it -p 8000:8000 my_chute:tag chutes run my_chute:chute --dev
 ```
 
 ### Deployment
 
 ```bash
-# ✅ Deploy with specific version
-VERSION=$(git describe --tags --abbrev=0)
-chutes deploy my_chute:chute --tag $VERSION --wait
+# ✅ Deploy with fee acknowledgment
+chutes deploy my_chute:chute --accept-fee
 
-# ✅ Verify health
-curl -f https://myuser-my-chute.chutes.ai/health
-
-# ✅ Monitor for 5 minutes
-chutes deployments logs my_chute --follow --timeout 5m
+# ✅ Note the chute_id and version from output
 ```
 
 ### Post-Deployment
 
 ```bash
-# ✅ Run smoke tests
-./scripts/smoke-tests.sh
+# ✅ Verify deployment
+chutes chutes get my-chute
 
-# ✅ Check metrics
-chutes metrics get my_chute --since 10m
+# ✅ Warm up the chute
+chutes warmup my-chute
 
-# ✅ Set up monitoring alerts
-chutes alerts enable my_chute
-
-# ✅ Update documentation
-git tag -a $VERSION -m "Production deployment $VERSION"
+# ✅ Test the endpoint
+curl -X POST https://your-chute-url/your-endpoint \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "test"}'
 ```
 
 ## Best Practices
 
-### 1. **Version Management**
-
-```bash
-# Always tag deployments
-git tag v1.2.0
-chutes deploy my_chute:chute --tag v1.2.0
-
-# Use semantic versioning
-v1.0.0  # Major release
-v1.1.0  # Minor update
-v1.1.1  # Patch fix
-```
-
-### 2. **Environment Separation**
-
-```bash
-# Different chutes for different environments
-chutes deploy my_chute_dev:chute      # Development
-chutes deploy my_chute_staging:chute  # Staging
-chutes deploy my_chute:chute          # Production
-```
-
-### 3. **Health Checks**
+### 1. Use Meaningful Names
 
 ```python
-# Always implement health checks
-@chute.cord(public_api_path="/health", method="GET")
-async def health_check(self) -> dict:
-    return {
-        "status": "healthy",
-        "version": "1.2.0",
-        "timestamp": time.time()
-    }
-```
-
-### 4. **Resource Optimization**
-
-```python
-# Right-size your resources
-NodeSelector(
-    gpu_count=1,           # Start small
-    min_vram_gb_per_gpu=16, # Match your model
-    include=["rtx4090"]    # Cost-effective options
+chute = Chute(
+    name="sentiment-analyzer-v2",  # Clear, versioned name
+    tagline="Analyze sentiment in text using BERT",
+    readme="## Sentiment Analyzer\n\n...",
 )
 ```
 
-### 5. **Monitoring Setup**
+### 2. Set Appropriate Concurrency
 
-```bash
-# Set up comprehensive monitoring
-chutes alerts create my_chute --metric error_rate --threshold 5%
-chutes alerts create my_chute --metric response_time --threshold 2s
-chutes alerts create my_chute --metric availability --threshold 99%
+```python
+# For LLMs with continuous batching (vllm/sglang)
+concurrency=64
+
+# For single-request models (diffusion, custom)
+concurrency=1
+
+# For models with some parallelism
+concurrency=4
+```
+
+### 3. Configure Shutdown Timer
+
+```python
+# For development/testing - short timeout
+shutdown_after_seconds=60
+
+# For production - longer timeout to avoid cold starts
+shutdown_after_seconds=300
+```
+
+### 4. Right-Size GPU Requirements
+
+```python
+# Match your model's actual requirements
+NodeSelector(
+    gpu_count=1,
+    min_vram_gb_per_gpu=24,  # For ~13B parameter models
+)
+
+# Don't over-provision
+NodeSelector(
+    gpu_count=1,
+    min_vram_gb_per_gpu=80,  # Only if you actually need A100
+)
 ```
 
 ## Next Steps

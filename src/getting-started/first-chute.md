@@ -63,7 +63,7 @@ Start by defining your data models with Pydantic:
 ```python
 # sentiment_chute.py
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional
+from typing import List
 from enum import Enum
 
 class SentimentLabel(str, Enum):
@@ -162,7 +162,7 @@ image = (
 
 Now create the main chute with proper initialization:
 
-````python
+```python
 # Add to sentiment_chute.py
 from chutes.chute import Chute, NodeSelector
 from fastapi import HTTPException
@@ -222,7 +222,6 @@ curl -X POST https://myuser-sentiment-chute.chutes.ai/batch \\
   "processing_time": 0.045
 }
 ```
-
     """,
     node_selector=NodeSelector(
         gpu_count=1,
@@ -232,8 +231,7 @@ curl -X POST https://myuser-sentiment-chute.chutes.ai/batch \\
     concurrency=4  # Handle up to 4 concurrent requests
 
 )
-
-````
+```
 
 ## Step 6: Add Model Loading
 
@@ -472,191 +470,7 @@ if __name__ == "__main__":
 
 ## Step 9: Complete File
 
-Here's your complete `sentiment_chute.py` file structure:
-
-```python
-# sentiment_chute.py
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional
-from enum import Enum
-import time
-import torch
-import numpy as np
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from fastapi import HTTPException
-
-from chutes.chute import Chute, NodeSelector
-from chutes.image import Image
-
-# === SCHEMAS ===
-class SentimentLabel(str, Enum):
-    POSITIVE = "POSITIVE"
-    NEGATIVE = "NEGATIVE"
-    NEUTRAL = "NEUTRAL"
-
-class TextInput(BaseModel):
-    text: str = Field(..., min_length=1, max_length=5000)
-
-    @validator('text')
-    def text_must_not_be_empty(cls, v):
-        if not v.strip():
-            raise ValueError('Text cannot be empty')
-        return v.strip()
-
-class BatchTextInput(BaseModel):
-    texts: List[str] = Field(..., min_items=1, max_items=50)
-
-    @validator('texts')
-    def validate_texts(cls, v):
-        cleaned_texts = []
-        for i, text in enumerate(v):
-            if not text or not text.strip():
-                raise ValueError(f'Text at index {i} cannot be empty')
-            if len(text) > 5000:
-                raise ValueError(f'Text at index {i} is too long')
-            cleaned_texts.append(text.strip())
-        return cleaned_texts
-
-class SentimentResult(BaseModel):
-    text: str
-    sentiment: SentimentLabel
-    confidence: float
-    processing_time: float
-
-class BatchSentimentResult(BaseModel):
-    results: List[SentimentResult]
-    total_texts: int
-    total_processing_time: float
-    average_confidence: float
-
-# === IMAGE ===
-image = (
-    Image(username="myuser", name="sentiment-chute", tag="1.0")
-    .from_base("nvidia/cuda:12.2-runtime-ubuntu22.04")
-    .with_python("3.11")
-    .run_command("apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*")
-    .run_command("pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
-    .run_command("pip install transformers>=4.30.0 accelerate>=0.20.0 numpy>=1.24.0")
-    .with_env("TRANSFORMERS_CACHE", "/app/models")
-    .run_command("mkdir -p /app/models")
-    .set_workdir("/app")
-)
-
-# === CHUTE ===
-chute = Chute(
-    username="myuser",
-    name="sentiment-chute",
-    image=image,
-    tagline="Advanced sentiment analysis with confidence scoring",
-    readme="""
-# Sentiment Analysis Chute
-Advanced sentiment analysis using RoBERTa with confidence scoring and batch processing.
-    """,
-    node_selector=NodeSelector(
-        gpu_count=1,
-        min_vram_gb_per_gpu=8,
-        include=["rtx4090", "rtx3090", "a100"]
-    ),
-    concurrency=4
-)
-
-# === STARTUP ===
-@chute.on_startup()
-async def load_model(self):
-    model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-
-    self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-    self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
-
-    self.device = "cuda" if torch.cuda.is_available() else "cpu"
-    self.model.to(self.device)
-    self.model.eval()
-
-    self.label_mapping = {
-        "LABEL_0": "NEGATIVE",
-        "LABEL_1": "NEUTRAL",
-        "LABEL_2": "POSITIVE"
-    }
-
-async def _predict_sentiment(self, text: str) -> tuple[str, float, float]:
-    start_time = time.time()
-
-    inputs = self.tokenizer(text, return_tensors="pt", truncation=True,
-                           padding=True, max_length=512).to(self.device)
-
-    with torch.no_grad():
-        outputs = self.model(**inputs)
-        predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-
-    predicted_class_id = predictions.argmax().item()
-    confidence = predictions[0][predicted_class_id].item()
-
-    model_label = self.model.config.id2label[predicted_class_id]
-    sentiment_label = self.label_mapping.get(model_label, model_label)
-
-    processing_time = time.time() - start_time
-    return sentiment_label, confidence, processing_time
-
-# === ENDPOINTS ===
-@chute.cord(public_api_path="/analyze", method="POST", input_schema=TextInput)
-async def analyze_sentiment(self, data: TextInput) -> SentimentResult:
-    sentiment, confidence, proc_time = await self._predict_sentiment(data.text)
-    return SentimentResult(
-        text=data.text,
-        sentiment=SentimentLabel(sentiment),
-        confidence=confidence,
-        processing_time=proc_time
-    )
-
-@chute.cord(public_api_path="/batch", method="POST", input_schema=BatchTextInput)
-async def analyze_batch(self, data: BatchTextInput) -> BatchSentimentResult:
-    start_time = time.time()
-    results = []
-    confidences = []
-
-    for text in data.texts:
-        sentiment, confidence, proc_time = await self._predict_sentiment(text)
-        results.append(SentimentResult(
-            text=text,
-            sentiment=SentimentLabel(sentiment),
-            confidence=confidence,
-            processing_time=proc_time
-        ))
-        confidences.append(confidence)
-
-    return BatchSentimentResult(
-        results=results,
-        total_texts=len(data.texts),
-        total_processing_time=time.time() - start_time,
-        average_confidence=np.mean(confidences)
-    )
-
-@chute.cord(public_api_path="/health", method="GET")
-async def health_check(self) -> dict:
-    return {
-        "status": "healthy",
-        "model_loaded": hasattr(self, 'model'),
-        "device": getattr(self, 'device', 'unknown'),
-        "gpu_available": torch.cuda.is_available()
-    }
-
-# === LOCAL TESTING ===
-if __name__ == "__main__":
-    import asyncio
-
-    async def test_locally():
-        await load_model(chute)
-
-        # Test single
-        result = await analyze_sentiment(chute, TextInput(text="I love this!"))
-        print(f"Single: {result.sentiment} ({result.confidence:.3f})")
-
-        # Test batch
-        batch = await analyze_batch(chute, BatchTextInput(texts=["Great!", "Terrible!", "Okay."]))
-        print(f"Batch: {len(batch.results)} results, avg confidence: {batch.average_confidence:.3f}")
-
-    asyncio.run(test_locally())
-```
+(Refer to the full file structure in Step 8)
 
 ## Step 10: Test Locally
 
@@ -664,20 +478,6 @@ Before deploying, test your chute locally:
 
 ```bash
 python sentiment_chute.py
-```
-
-You should see output like:
-
-```
-🚀 Starting sentiment analysis chute...
-📥 Loading model: cardiffnlp/twitter-roberta-base-sentiment-latest
-✅ Tokenizer loaded successfully
-✅ Model loaded successfully
-🖥️  Using device: cuda
-🔥 Warming up model...
-✅ Model loaded and ready!
-Single: POSITIVE (0.987)
-Batch: 3 results, avg confidence: 0.891
 ```
 
 ## Step 11: Build and Deploy
@@ -721,17 +521,6 @@ curl -X POST https://myuser-sentiment-chute.chutes.ai/analyze \
   -d '{"text": "I absolutely love this new AI service!"}'
 ```
 
-Expected response:
-
-```json
-{
-	"text": "I absolutely love this new AI service!",
-	"sentiment": "POSITIVE",
-	"confidence": 0.9847,
-	"processing_time": 0.045
-}
-```
-
 ### Batch Analysis
 
 ```bash
@@ -752,43 +541,6 @@ curl -X POST https://myuser-sentiment-chute.chutes.ai/batch \
 curl https://myuser-sentiment-chute.chutes.ai/health
 ```
 
-### Python Client
-
-```python
-import requests
-
-# Test your API
-response = requests.post(
-    "https://myuser-sentiment-chute.chutes.ai/analyze",
-    json={"text": "I love learning about AI!"}
-)
-
-result = response.json()
-print(f"Sentiment: {result['sentiment']}")
-print(f"Confidence: {result['confidence']:.3f}")
-```
-
-## What You've Learned
-
-Congratulations! You've successfully built and deployed your first custom chute. You now understand:
-
-### Core Concepts
-
-- ✅ **Custom Docker images** with optimized dependencies
-- ✅ **Pydantic schemas** for input/output validation
-- ✅ **Model loading and management** with startup hooks
-- ✅ **API endpoint creation** with `@chute.cord`
-- ✅ **Error handling** and validation
-- ✅ **Local testing** before deployment
-
-### Advanced Features
-
-- ✅ **Batch processing** for efficiency
-- ✅ **Performance monitoring** with timing
-- ✅ **Health checks** for monitoring
-- ✅ **GPU optimization** with proper device management
-- ✅ **Resource specification** with NodeSelector
-
 ## Next Steps
 
 Now that you understand the fundamentals, explore more advanced topics:
@@ -806,15 +558,7 @@ Now that you understand the fundamentals, explore more advanced topics:
 - **[Error Handling](../guides/error-handling)** - Robust error management
 - **[Best Practices](../guides/best-practices)** - Production deployment patterns
 
-### Using Templates
-
-- **[VLLM Template](../templates/vllm)** - High-performance language models
-- **[TEI Template](../templates/tei)** - Text embeddings
-- **[Diffusion Template](../templates/diffusion)** - Image generation
-
 ## Troubleshooting
-
-### Common Issues
 
 **Build fails with dependency errors?**
 
@@ -834,13 +578,7 @@ Now that you understand the fundamentals, explore more advanced topics:
 - Check NodeSelector GPU requirements
 - Ensure PyTorch CUDA support
 
-**API returns 500 errors?**
-
-- Check model loading in startup
-- Verify input validation
-- Review error messages in logs
-
-### Getting Help
+## Getting Help
 
 - 📖 **Documentation**: Continue with advanced guides
 - 💬 **Discord**: [Join our community](https://discord.gg/wHrXwWkCRz)

@@ -31,10 +31,10 @@ By installing Wireguard, your kubernetes cluster can span any number of provider
 
 _**this is installed and configured automatically by ansible scripts**_
 
-### Kubernetes
+### Kubernetes (K3s)
 
-The entirety of the chutes miner must run within a [kubernetes](https://kubernetes.io/) While not strictly necessary, we recommend using microk8s (which is all handled automatically from the ansible scripts).
-If you choose to not use microk8s, you must also modify or not use the provided ansible scripts.
+The entirety of the chutes miner must run within a [kubernetes](https://kubernetes.io/) cluster. We use **K3s**, which is handled automatically by the ansible scripts.
+If you choose to not use K3s/Ansible, you must also modify or not use the provided ansible scripts.
 
 _**this is installed and configured automatically by ansible scripts**_
 
@@ -136,22 +136,16 @@ You'll need one non-GPU server (8 cores, 64gb ram minimum) responsible for runni
 
 [The list of supported GPUs can be found here](https://github.com/rayonlabs/chutes-api/blob/main/api/gpu.py)
 
-Head over to the [ansible](/docs/miner-resources/ansible) documentation for steps on setting up your bare metal instances. Be sure to update inventory.yml
+Head over to the [ansible](ansible) documentation for steps on setting up your bare metal instances. Be sure to update `inventory.yml`
 
 ### 2. Configure prerequisites
 
-The easiest way to interact with kubernetes would be from within the primary node, but you can alternatively set it up on your local machine or other server. To do so:
+If you set `setup_local_kubeconfig: true` in your ansible inventory, the kubeconfig file will be automatically copied to your local machine (usually to `~/.kube/config` or similar, check the playbook output).
 
-- install [kubectl](https://kubernetes.io/docs/reference/kubectl/)
-- copy the the kubernetes configuration from the CPU primary via `microk8s config` and put it on your workstation at `~/.kube/config`
-- replace the IP address of the cluster with the public IP address of the primary node
-- since the IP will not match the cert, you will need to specify `--insecure-skip-tls-verify` when running any kubectl commands from this server (not necessary when done on primary node)
-
-If you plan to use the primary node, you should alias `kubectl` and `helm`:
+You can verify access by running:
 
 ```bash
-echo 'alias kubectl="microk8s kubectl"' >> .bashrc
-echo 'alias helm="microk8s helm"' >> .bashrc
+kubectl get nodes
 ```
 
 You'll need to setup a few things manually:
@@ -163,8 +157,15 @@ You'll need to setup a few things manually:
 kubectl create secret docker-registry regcred --docker-server=docker.io --docker-username=[repalce with your username] --docker-password=[replace with your access token] --docker-email=[replace with your email]
 ```
 
-- Create the miner credentials
-  - You'll need to find the ss58Address and secretSeed from the hotkey file you'll be using for mining, e.g. `cat ~/.bittensor/wallets/default/hotkeys/hotkey`
+- **Miner Credentials**: If you set `hotkey_path` in your ansible `inventory.yml`, the secret `miner-credentials` should have been created automatically. You can verify with:
+
+```bash
+kubectl get secret miner-credentials -n chutes
+```
+
+If not, create it manually:
+
+- Find the ss58Address and secretSeed from the hotkey file you'll be using for mining, e.g. `cat ~/.bittensor/wallets/default/hotkeys/hotkey`
 
 ```
 kubectl create secret generic miner-credentials \
@@ -173,41 +174,9 @@ kubectl create secret generic miner-credentials \
   -n chutes
 ```
 
-### Full secret creation example
-
-Here's an example using a throwaway key. Suppose you created a hotkey as such:
-
-```bash
-$ btcli wallet new_hotkey --wallet.name offline --wallet.hotkey test --wallet.path ~/.bittensor/wallets
-...
-```
-
-Print out the content of that hotkey, and optionally pipe to jq to pretty-print:
-
-```bash
-$ cat ~/.bittensor/wallets/offline/hotkeys/test | jq .
-{
-  "accountId": "0x5a30cd5517328838f69ed48531894d94e9f231dff241e1561260a8522a167731",
-  "publicKey": "0x5a30cd5517328838f69ed48531894d94e9f231dff241e1561260a8522a167731",
-  "privateKey": "0x69de0e5d7e66902d5b9da02091bb130aedf49d6c53a2fe67eeb914520e0ea70aa2176663f7b30c93d8826c702e9b22c35ab1a99afbdc02c35618c97e00edab3a",
-  "secretPhrase": "inform sell fitness extra kitten unit hood glass window law spider desk",
-  "secretSeed": "0xe031170f32b4cda05df2f3cf6bc8d76827b683bbce23d9fa960c0b3fc21641b8",
-  "ss58Address": "5E6xfU3oNU7y1a7pQwoc31fmUjwBZ2gKcNCw8EXsdtCQieUQ"
-}
-```
-
-To create the secret from this key, the command would be:
-
-```bash
-kubectl create secret generic miner-credentials \
-  --from-literal=ss58=5E6xfU3oNU7y1a7pQwoc31fmUjwBZ2gKcNCw8EXsdtCQieUQ \
-  --from-literal=seed=e031170f32b4cda05df2f3cf6bc8d76827b683bbce23d9fa960c0b3fc21641b8 \
-  -n chutes
-```
-
 ### 3. Configure your environment
 
-Be sure to thoroughly examine [values](https://github.com/rayonlabs/chutes-miner/blob/main/charts/values.yaml) and update according to your particular environment.
+Be sure to thoroughly examine [values](https://github.com/rayonlabs/chutes-miner/blob/main/charts/values.yaml) (or similar in the repo) and update according to your particular environment.
 
 Primary sections to update:
 
@@ -298,25 +267,22 @@ kubectl rollout restart deployment/gepetto -n chutes
 ### 5. Deploy the miner within your kubernetes cluster
 
 First, and **_exactly one time_**, you'll want to generate passwords for postgres and redis - **_never run this more than once or things will break!_**
-Execute this from the `charts` directory:
+Execute this from the `charts` directory (commands may vary slightly based on repo structure):
 
 ```bash
 helm template . --set createPasswords=true -s templates/one-time-passwords.yaml | kubectl apply -n chutes -f -
 ```
 
-Once the secrets are created, you can run this any time to generate your deployment charts, from within the `charts` directory:
+**Note on Charts:** The repository may split components into multiple charts (e.g., `chutes-miner`, `chutes-miner-gpu`, `chutes-monitoring`). Refer to the repository README for the exact Helm commands to install all components.
+
+Generally, you will generate your deployment manifests and apply them:
 
 ```bash
 helm template . -f values.yaml > miner-charts.yaml
+kubectl apply -f miner-charts.yaml -n chutes
 ```
 
 Any time you change `values.yaml`, you will want to re-run the template command to get the updated charts!
-
-Then, you will deploy the chutes components with:
-
-```bash
-kubectl apply -f miner-charts.yaml -n chutes
-```
 
 ### 6. Register
 
@@ -357,10 +323,10 @@ chutes-miner add-node \
 - `--hotkey` is the path to the hotkey file you registered with, used to sign requests to be able to manage inventory on your system via the miner API
 - `--miner-api` is the base URL to your miner API service, which will be http://[non-GPU node IP]:[minerAPI port, default 32000], i.e. find the public/external IP address of your CPU-only node, and whatever port you configured for the API service (which is 32000 if you didn't change the default).
 
-You can add additional GPU nodes at any time by simply updating inventory.yaml and rerunning the `site.yaml` and `join-cluster.yaml` playbooks: [ansible readme](/docs/miner-resources/ansible#to-add-a-new-node-after-the-fact)
+You can add additional GPU nodes at any time by simply updating inventory.yaml and rerunning the `site.yaml` playbook: [ansible readme](ansible#to-add-a-new-node-after-the-fact)
 
 ## Adding servers
 
-To expand your miner's inventory, you should bootstrap them with the ansible scripts, specifically the site and join-cluster bits. Info for the ansible portions [here](/docs/miner-resources/ansible#to-add-a-new-node-after-the-fact)
+To expand your miner's inventory, you should bootstrap them with the ansible scripts, specifically the site playbook. Info for the ansible portions [here](ansible#to-add-a-new-node-after-the-fact)
 
 Then, run the `chutes-miner add-node ...` command above.

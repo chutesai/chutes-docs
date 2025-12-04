@@ -2,7 +2,7 @@
 
 This example shows how to create **streaming API endpoints** that send results in real-time as they become available. Perfect for long-running AI tasks where you want to show progress.
 
-## Real-time Text Streaming {#real-time-text-streaming}
+## Real-time Text Streaming
 
 Real-time text streaming allows you to process and return results as they become available, providing immediate feedback to users instead of waiting for all processing to complete. This is especially valuable for:
 
@@ -24,7 +24,7 @@ A text processing service that streams results as they're computed:
 
 ### `streaming_processor.py`
 
-````python
+```python
 import asyncio
 import time
 import json
@@ -50,9 +50,9 @@ class StreamingTextInput(BaseModel):
 
 image = (
     Image(username="myuser", name="streaming-processor", tag="1.0")
-    .from_base("nvidia/cuda:12.2-runtime-ubuntu22.04")
+    .from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
     .with_python("3.11")
-    .run_command("pip install torch==2.1.0 transformers==4.30.0 accelerate==0.20.0 spacy>=3.6.0")
+    .run_command("pip install torch>=2.4.0 transformers>=4.44.0 accelerate>=0.33.0 spacy>=3.7.0")
     .run_command("python -m spacy download en_core_web_sm")
     .with_env("TRANSFORMERS_CACHE", "/app/models")
 )
@@ -80,18 +80,19 @@ curl -X POST https://myuser-streaming-processor.chutes.ai/process-stream \\
 
 Each response line contains JSON with the current processing step.
 """,
-node_selector=NodeSelector(
-gpu_count=1,
-min_vram_gb_per_gpu=12
-)
+    node_selector=NodeSelector(
+        gpu_count=1,
+        min_vram_gb_per_gpu=12
+    )
 )
 
 # === MODEL LOADING ===
 
 @chute.on_startup()
 async def load_models(self):
-"""Load all models needed for processing."""
-print("Loading models for streaming processing...")
+    """Load all models needed for processing."""
+    print("Loading models for streaming processing...")
+    import torch
 
     # Sentiment analysis model
     sentiment_model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
@@ -118,15 +119,15 @@ print("Loading models for streaming processing...")
 # === STREAMING ENDPOINTS ===
 
 @chute.cord(
-public_api_path="/process-stream",
-method="POST",
-input_schema=StreamingTextInput,
-stream=True,
-output_content_type="application/json"
+    public_api_path="/process-stream",
+    method="POST",
+    input_schema=StreamingTextInput,
+    stream=True,
+    output_content_type="application/json"
 )
 async def process_text_stream(self, data: StreamingTextInput) -> AsyncGenerator[dict, None]:
-"""Process text with streaming results."""
-
+    """Process text with streaming results."""
+    
     start_time = time.time()
 
     # Initial status
@@ -155,6 +156,8 @@ async def process_text_stream(self, data: StreamingTextInput) -> AsyncGenerator[
     # Step 2: Sentiment Analysis (if requested)
     if data.include_sentiment:
         yield {"status": "sentiment_processing", "message": "Analyzing sentiment..."}
+        
+        import torch
 
         try:
             sentiments = []
@@ -239,6 +242,8 @@ async def process_text_stream(self, data: StreamingTextInput) -> AsyncGenerator[
     # Step 4: Named Entity Recognition (if requested)
     if data.include_entities:
         yield {"status": "entities_processing", "message": "Extracting entities..."}
+        
+        import spacy
 
         try:
             doc = self.nlp(data.text)
@@ -281,13 +286,13 @@ async def process_text_stream(self, data: StreamingTextInput) -> AsyncGenerator[
     }
 
 @chute.cord(
-public_api_path="/generate-stream",
-method="POST",
-stream=True,
-output_content_type="text/plain"
+    public_api_path="/generate-stream",
+    method="POST",
+    stream=True,
+    output_content_type="text/plain"
 )
 async def generate_text_stream(self, prompt: str) -> AsyncGenerator[str, None]:
-"""Simple text generation with streaming (simulated)."""
+    """Simple text generation with streaming (simulated)."""
 
     # Simulate text generation word by word
     words = [
@@ -308,13 +313,14 @@ async def generate_text_stream(self, prompt: str) -> AsyncGenerator[str, None]:
 # === REGULAR (NON-STREAMING) ENDPOINT FOR COMPARISON ===
 
 @chute.cord(
-public_api_path="/process-batch",
-method="POST",
-input_schema=StreamingTextInput,
-output_content_type="application/json"
+    public_api_path="/process-batch",
+    method="POST",
+    input_schema=StreamingTextInput,
+    output_content_type="application/json"
 )
 async def process_text_batch(self, data: StreamingTextInput) -> dict:
-"""Non-streaming version that returns all results at once."""
+    """Non-streaming version that returns all results at once."""
+    import torch
 
     start_time = time.time()
     results = {}
@@ -351,8 +357,7 @@ async def process_text_batch(self, data: StreamingTextInput) -> dict:
 
     results["processing_time"] = time.time() - start_time
     return results
-
-````
+```
 
 ## Testing the Streaming API
 
@@ -590,7 +595,7 @@ async def process_large_text(text: str):
 
 ## Next Steps
 
-- **[Batch Processing](/docs/examples/batch-processing)** - Handle multiple inputs efficiently
-- **[Multi-Model Analysis](/docs/examples/multi-model-analysis)** - Combine different AI models
-- **[Custom Images Guide](/docs/guides/custom-images)** - Advanced Docker setups
-- **[Performance Optimization](/docs/guides/performance)** - Speed up your chutes
+- **[Batch Processing](../examples/batch-processing)** - Handle multiple inputs efficiently
+- **[Multi-Model Analysis](../examples/multi-model-analysis)** - Combine different AI models
+- **[Custom Images Guide](../guides/custom-images)** - Advanced Docker setups
+- **[Performance Optimization](../guides/performance)** - Speed up your chutes

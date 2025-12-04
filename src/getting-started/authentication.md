@@ -35,7 +35,7 @@ If you prefer to manage your own wallet:
 #### Install Bittensor
 
 ```bash
-# Install older version (required for wallet creation)
+# Install older version (required for easy wallet creation)
 pip install 'bittensor<8'
 ```
 

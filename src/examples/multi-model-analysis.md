@@ -22,6 +22,7 @@ from typing import List, Dict, Any, Optional, Union
 import asyncio
 from dataclasses import dataclass
 import logging
+import time
 
 @dataclass
 class ModelResult:
@@ -360,6 +361,22 @@ class EntityExtractor:
             "confidence": 0.9
         }
 
+class TextClassifier:
+    async def analyze(self, text: str) -> Dict[str, Any]:
+        # Implementation would use actual text classifier
+        return {
+            "output": {"predicted_class": "technology", "score": 0.95},
+            "confidence": 0.95
+        }
+
+class TextSummarizer:
+    async def analyze(self, text: str) -> Dict[str, Any]:
+        # Implementation would use actual summarizer
+        return {
+            "output": {"summary": "This is a summary."},
+            "confidence": 0.9
+        }
+
 class ImageClassifier:
     async def analyze(self, image_base64: str) -> Dict[str, Any]:
         # Implementation would use actual image classification model
@@ -368,12 +385,52 @@ class ImageClassifier:
             "confidence": 0.92
         }
 
+class ObjectDetector:
+    async def analyze(self, image_base64: str) -> Dict[str, Any]:
+        # Implementation would use actual object detector
+        return {
+            "output": {"objects": [{"class": "cat", "box": [0, 0, 100, 100]}]},
+            "confidence": 0.9
+        }
+
+class OpticalCharacterRecognition:
+    async def analyze(self, image_base64: str) -> Dict[str, Any]:
+        # Implementation would use actual OCR
+        return {
+            "output": {"text": "Extracted text"},
+            "confidence": 0.85
+        }
+
 class ImageCaptioner:
     async def generate_caption(self, image_base64: str) -> Dict[str, Any]:
         # Implementation would use actual image captioning model
         return {
             "output": {"caption": "A cat sitting on a windowsill"},
             "confidence": 0.88
+        }
+
+class VisualQuestionAnswering:
+    async def answer(self, text: str, image_base64: str) -> Dict[str, Any]:
+        # Implementation would use VQA model
+        return {
+            "output": {"answer": "Yes"},
+            "confidence": 0.9
+        }
+
+class SpeechRecognizer:
+    async def analyze(self, audio_base64: str) -> Dict[str, Any]:
+        # Implementation would use ASR model
+        return {
+            "output": {"text": "Transcribed audio"},
+            "confidence": 0.95
+        }
+
+class AudioClassifier:
+    async def analyze(self, audio_base64: str) -> Dict[str, Any]:
+        # Implementation would use audio classifier
+        return {
+            "output": {"class": "music"},
+            "confidence": 0.8
         }
 
 # Global analyzer instance
@@ -409,8 +466,8 @@ multi_model_image = (
         base_image="nvidia/cuda:12.1-devel-ubuntu22.04",
         python_version="3.11"
     )
-    .run_command("pip install torch==2.1.0+cu121 transformers==4.35.0 sentence-transformers==2.2.2 opencv-python==4.8.0.76 pillow==10.0.1 ultralytics==8.0.206 librosa==0.10.1 soundfile==0.12.1 whisper==1.1.10 pytesseract==0.3.10 easyocr==1.7.0 numpy==1.24.3 scipy==1.11.4 scikit-learn==1.3.0 redis==5.0.0 --extra-index-url https://download.pytorch.org/whl/cu121")
-    .run_command("apt-get update && apt-get install -y tesseract-ocr")
+    .run_command("pip install torch>=2.4.0 transformers>=4.44.0 sentence-transformers>=3.0.0 opencv-python>=4.10.0 pillow>=10.4.0 ultralytics>=8.2.0 librosa>=0.10.2 soundfile>=0.12.1 pytesseract>=0.3.10 easyocr>=1.7.1 numpy>=1.26.0 scipy>=1.14.0 scikit-learn>=1.5.0 redis>=5.0.0")
+    .run_command("apt-get update && apt-get install -y tesseract-ocr libgl1-mesa-glx")
     .add("./models", "/app/models")
     .add("./multi_model", "/app/multi_model")
 )
@@ -429,8 +486,8 @@ multi_model_chute = Chute(
     concurrency=5
 )
 
-result = multi_model_chute.deploy()
-print(f"Multi-model service deployed: {result}")
+# result = multi_model_chute.deploy()
+# print(f"Multi-model service deployed: {result}")
 ```
 
 ## Advanced Use Cases
@@ -494,6 +551,12 @@ class DocumentIntelligenceAnalyzer(MultiModelAnalyzer):
             "signature_locations": [{"x": 450, "y": 600, "width": 150, "height": 50}]
         }
 
+    def _calculate_document_confidence(self, results: List[Any]) -> float:
+        """Calculate overall confidence for document analysis"""
+        # Simplified calculation
+        confidences = [r.get("confidence", 0) for r in results if isinstance(r, dict)]
+        return sum(confidences) / len(confidences) if confidences else 0.0
+
 async def analyze_document_intelligence(inputs: Dict[str, Any]) -> Dict[str, Any]:
     """Document intelligence analysis endpoint"""
     analyzer = DocumentIntelligenceAnalyzer()
@@ -549,7 +612,10 @@ class SocialMediaAnalyzer(MultiModelAnalyzer):
             ])
 
         # Execute all analyses
-        task_names, tasks = zip(*analysis_tasks) if analysis_tasks else ([], [])
+        if not analysis_tasks:
+            return {"error": "No content to analyze"}
+
+        task_names, tasks = zip(*analysis_tasks)
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Compile comprehensive report
@@ -574,6 +640,36 @@ class SocialMediaAnalyzer(MultiModelAnalyzer):
         # Implementation would use engagement prediction model
         return {"predicted_likes": 150, "predicted_shares": 25, "predicted_comments": 10}
 
+    async def _detect_faces(self, image: str) -> Dict[str, Any]:
+        """Detect faces in image"""
+        # Implementation would use face detection model
+        return {"face_count": 1, "emotions": ["happy"]}
+
+    def _generate_content_summary(self, text, images, audio) -> Dict[str, Any]:
+        """Generate summary of content types present"""
+        return {
+            "has_text": bool(text),
+            "image_count": len(images),
+            "has_audio": bool(audio),
+            "has_video": False  # Not implemented yet
+        }
+
+    def _analyze_engagement_factors(self, results, task_names) -> Dict[str, Any]:
+        """Analyze factors contributing to engagement"""
+        return {"sentiment_impact": "positive", "visual_impact": "high"}
+
+    def _assess_content_risks(self, results, task_names) -> Dict[str, Any]:
+        """Assess potential content risks"""
+        return {"risk_level": "low", "flagged_content": []}
+
+    def _generate_recommendations(self, results, task_names) -> List[str]:
+        """Generate content improvement recommendations"""
+        return ["Add more hashtags", "Use brighter images"]
+
+    def _identify_target_audience(self, results, task_names) -> str:
+        """Identify potential target audience"""
+        return "General"
+
     def _calculate_virality_score(self, results: List, task_names: List[str]) -> float:
         """Calculate potential virality score"""
         # Complex scoring algorithm based on multiple factors
@@ -581,7 +677,7 @@ class SocialMediaAnalyzer(MultiModelAnalyzer):
 
         # Boost for positive sentiment
         sentiment_idx = next((i for i, name in enumerate(task_names) if name == "sentiment"), None)
-        if sentiment_idx and not isinstance(results[sentiment_idx], Exception):
+        if sentiment_idx is not None and not isinstance(results[sentiment_idx], Exception):
             sentiment = results[sentiment_idx].get("label", "neutral")
             if sentiment == "positive":
                 base_score += 0.2
@@ -745,7 +841,7 @@ class MonitoredMultiModelAnalyzer(LoadBalancedMultiModelAnalyzer):
         return result
 
 # Start metrics server
-start_http_server(8001)
+# start_http_server(8001)
 ```
 
 ## Usage Examples
@@ -754,32 +850,29 @@ start_http_server(8001)
 
 ```python
 # Deploy the multi-model service
-comprehensive_result = multi_model_chute.run({
-    "text": "Just visited the most amazing restaurant! The food was incredible and the view was breathtaking. Highly recommend!",
-    "image_base64": "...",  # Base64 encoded restaurant photo
-    "analysis_types": [
-        "sentiment", "entities", "classification",
-        "image_classification", "object_detection", "image_captioning"
-    ],
-    "combine_results": True,
-    "confidence_threshold": 0.6
-})
+# comprehensive_result = multi_model_chute.run({
+#     "text": "Just visited the most amazing restaurant! The food was incredible and the view was breathtaking. Highly recommend!",
+#     "image_base64": "...",  # Base64 encoded restaurant photo
+#     "analysis_types": [
+#         "sentiment", "entities", "classification",
+#         "image_classification", "object_detection", "image_captioning"
+#     ],
+#     "combine_results": True,
+#     "confidence_threshold": 0.6
+# })
 
-print("Individual Results:")
-for result in comprehensive_result["individual_results"]:
-    print(f"- {result['model_name']}: {result['confidence']:.2f} confidence")
+# print("Individual Results:")
+# for result in comprehensive_result["individual_results"]:
+#     print(f"- {result['model_name']}: {result['confidence']:.2f} confidence")
 
-print("\nCombined Analysis:")
-print(f"Overall sentiment: {comprehensive_result['combined_analysis']['summary']['sentiment']['label']}")
-print(f"Entities found: {comprehensive_result['combined_analysis']['summary']['entities']}")
-print(f"Cross-modal alignment: {comprehensive_result['combined_analysis']['cross_modal_insights']}")
+# print("\nCombined Analysis:")
+# print(f"Overall sentiment: {comprehensive_result['combined_analysis']['summary']['sentiment']['label']}")
+# print(f"Entities found: {comprehensive_result['combined_analysis']['summary']['entities']}")
+# print(f"Cross-modal alignment: {comprehensive_result['combined_analysis']['cross_modal_insights']}")
 ```
 
 ## Next Steps
 
 - **[Custom Training](custom-training)** - Train specialized models for your use case
 - **[Performance Optimization](../guides/performance)** - Scale multi-model systems
-- **[Production Deployment](../guides/production-deployment)** - Deploy at enterprise scale
-- **[Model Orchestration](../guides/model-orchestration)** - Advanced model management
-
-For enterprise multi-model architectures, see the [ML Platform Guide](../guides/ml-platform).
+- **[Production Deployment](../guides/best-practices)** - Deploy at enterprise scale

@@ -46,9 +46,9 @@ class SentimentResult(BaseModel):
 
 image = (
     Image(username="myuser", name="sentiment-analyzer", tag="1.0")
-    .from_base("nvidia/cuda:12.2-runtime-ubuntu22.04")
+    .from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
     .with_python("3.11")
-    .run_command("pip install torch==2.1.0 transformers==4.30.0 accelerate==0.20.0")
+    .run_command("pip install torch>=2.4.0 transformers>=4.44.0 accelerate>=0.33.0")
     .with_env("TRANSFORMERS_CACHE", "/app/models")
     .run_command("mkdir -p /app/models")
 )
@@ -73,16 +73,16 @@ Send a POST request to `/analyze`:
 curl -X POST https://myuser-sentiment-analyzer.chutes.ai/analyze \\
   -H "Content-Type: application/json" \\
   -d '{"text": "I love this product!"}'
-```
+````
 
 ## Response
 
 ```json
 {
-	"text": "I love this product!",
-	"sentiment": "POSITIVE",
-	"confidence": 0.99,
-	"processing_time": 0.05
+  "text": "I love this product!",
+  "sentiment": "POSITIVE",
+  "confidence": 0.99,
+  "processing_time": 0.05
 }
 ```
 
@@ -198,7 +198,7 @@ import asyncio
 ```python
 class TextInput(BaseModel):
     text: str = Field(..., min_length=5, max_length=1000)
-```
+````
 
 - **Validation**: Ensures text is between 5-1000 characters
 - **Documentation**: Provides clear API documentation
@@ -209,9 +209,9 @@ class TextInput(BaseModel):
 ```python
 image = (
     Image(username="myuser", name="sentiment-analyzer", tag="1.0")
-    .from_base("nvidia/cuda:12.2-runtime-ubuntu22.04")
+    .from_base("nvidia/cuda:12.4.1-runtime-ubuntu22.04")
     .with_python("3.11")
-    .run_command("pip install torch==2.1.0 transformers==4.30.0")
+    .run_command("pip install torch>=2.4.0 transformers>=4.44.0")
 )
 ```
 
@@ -272,10 +272,10 @@ Expected response:
 
 ```json
 {
-	"text": "This is amazing!",
-	"sentiment": "POSITIVE",
-	"confidence": 0.99,
-	"processing_time": 0.05
+  "text": "This is amazing!",
+  "sentiment": "POSITIVE",
+  "confidence": 0.99,
+  "processing_time": 0.05
 }
 ```
 
@@ -331,10 +331,10 @@ for text in texts:
 
 Now that you understand the basics, try:
 
-- **[Streaming Responses](/docs/examples/streaming-responses)** - Real-time analysis
-- **[Batch Processing](/docs/examples/batch-processing)** - Process multiple texts
-- **[Multi-Model Setup](/docs/examples/multi-model-analysis)** - Combine multiple models
-- **[Custom Image Building](/docs/guides/custom-images)** - Advanced Docker
+- **[Streaming Responses](../examples/streaming-responses)** - Real-time analysis
+- **[Batch Processing](../examples/batch-processing)** - Process multiple texts
+- **[Multi-Model Setup](../examples/multi-model-analysis)** - Combine multiple models
+- **[Custom Image Building](../guides/custom-images)** - Advanced Docker
 
 ## Common Issues & Solutions
 
