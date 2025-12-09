@@ -162,6 +162,20 @@ chutes chutes get my-first-chute
 
 Visit the [Chutes Dashboard](https://chutes.ai) to view real-time logs and metrics.
 
+### Deleting Resources
+
+When you're done with a chute, it's good practice to clean up your resources.
+
+- **Note:** You must remove a chute before you can delete its image. Images tied to running chutes cannot be deleted.
+
+```bash
+# 1. Delete the chute
+chutes chutes delete <chute_id>
+
+# 2. Delete the image (after chute is removed)
+chutes images delete <image_id>
+```
+
 ## What Just Happened?
 
 Congratulations! You just:
