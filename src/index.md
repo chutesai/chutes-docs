@@ -89,6 +89,17 @@ node_selector = NodeSelector(
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+## Security & Trust
+
+Chutes is built on a "don't trust, verify" philosophy. We employ advanced security measures including:
+
+- 🔒 **End-to-End Encryption**
+- 🛡️ **Trusted Execution Environments (TEEs)** using Intel TDX
+- 🔍 **Cryptographic Verification** of code and models
+- 🛑 **Hardware Attestation** for GPUs
+
+Learn more about our [Security Architecture](core-concepts/security-architecture).
+
 ## Integrations
 
 Chutes integrates with popular AI frameworks to make development easier:

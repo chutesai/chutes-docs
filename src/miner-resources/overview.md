@@ -61,6 +61,8 @@ Chutes uses a custom c/CUDA library for validating graphics cards: https://githu
 The TL;DR is that it uses matrix multiplications seeded by device info to verify the authenticity of a GPU, including VRAM capacity tests (95% of total VRAM must be available for matrix multiplications).
 All traffic sent to instances on chutes network are encrypted with keys that can only be decrypted by the GPU advertised.
 
+For a detailed explanation of GraVal and other miner verification mechanisms, see the [Security Architecture](/docs/core-concepts/security-architecture) guide.
+
 When you add a new node to your kubernetes cluster, each GPU on the server must be verified with the GraVal package, so a bootstrap server is deployed to accomplish this (automatically, no need to fret).
 
 Each time a chute starts/gets deployed, it also needs to run GraVal to calculate the decryption key that will be necessary for the GPU(s) the chute is deployed on.

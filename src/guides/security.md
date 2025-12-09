@@ -1,6 +1,6 @@
 # Security Guide
 
-This comprehensive guide covers security best practices for Chutes applications, from basic security measures to advanced threat protection.
+This comprehensive guide covers security best practices for Chutes applications. For a deep dive into the Chutes platform's underlying security architecture, including Trusted Execution Environments (TEEs) and hardware attestation, please see the [Security Architecture](/docs/core-concepts/security-architecture) documentation.
 
 ## Overview
 
