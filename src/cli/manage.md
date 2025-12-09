@@ -292,18 +292,20 @@ chutes warmup my-chute
 
 ### Cleaning Up Resources
 
+**Important:** You must delete chutes *before* deleting the images they use. Images tied to existing chutes (even if not currently running) cannot be deleted.
+
 ```bash
 # List all chutes
 chutes chutes list
 
-# Delete unused chutes
+# Delete unused chutes first
 chutes chutes delete old-chute-1
 chutes chutes delete old-chute-2
 
 # List all images
 chutes images list
 
-# Delete unused images
+# Delete unused images (after their chutes are removed)
 chutes images delete old-image:1.0
 chutes images delete test-image:dev
 ```
