@@ -215,6 +215,7 @@ chute = build_vllm_chute(
 ### 📚 Learn Core Concepts
 
 - **[Understanding Chutes](../core-concepts/chutes)** - Deep dive into the Chute class
+- **[Security Architecture](../core-concepts/security-architecture)** - Learn about our TEE and hardware attestation security
 - **[Cords (API Endpoints)](../core-concepts/cords)** - Custom API endpoints
 - **[Custom Images](../core-concepts/images)** - Build your own Docker images
 
