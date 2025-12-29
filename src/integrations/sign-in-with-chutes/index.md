@@ -16,7 +16,7 @@ Traditional API key authentication works well for server-side applications, but 
 
 The fastest way to add "Sign in with Chutes" to your application is using the official SDK repository:
 
-**[github.com/chutesai/Vibe-Sign-in-with-Chutes](https://github.com/chutesai/Vibe-Sign-in-with-Chutes)**
+**[github.com/chutesai/Sign-in-with-Chutes](https://github.com/chutesai/Sign-in-with-Chutes)**
 
 This repository is designed for **vibe coding** with AI assistants like Cursor, Windsurf, or GitHub Copilot. Simply point your AI assistant to the repository, and it can:
 
@@ -31,17 +31,17 @@ When working with an AI coding assistant, you can reference the SDK repository d
 
 ```
 Add "Sign in with Chutes" to my app using the SDK at:
-https://github.com/chutesai/Vibe-Sign-in-with-Chutes
+https://github.com/chutesai/Sign-in-with-Chutes
 ```
 
 The repository includes:
 
-| Directory | Contents |
-|-----------|----------|
-| `packages/nextjs/` | Copy-paste integration files for Next.js |
-| `scripts/` | Setup wizard and OAuth app registration scripts |
-| `examples/nextjs-minimal/` | Working demo application |
-| `docs/` | Framework-specific guides and troubleshooting |
+| Directory                  | Contents                                        |
+| -------------------------- | ----------------------------------------------- |
+| `packages/nextjs/`         | Copy-paste integration files for Next.js        |
+| `scripts/`                 | Setup wizard and OAuth app registration scripts |
+| `examples/nextjs-minimal/` | Working demo application                        |
+| `docs/`                    | Framework-specific guides and troubleshooting   |
 
 ### Manual Quick Start
 
@@ -49,10 +49,10 @@ If you prefer a manual approach:
 
 ```bash
 # Clone the repository
-git clone https://github.com/chutesai/Vibe-Sign-in-with-Chutes.git
+git clone https://github.com/chutesai/Sign-in-with-Chutes.git
 
 # Install dependencies and run the setup wizard
-cd Vibe-Sign-in-with-Chutes
+cd Sign-in-with-Chutes
 npm install
 npx tsx scripts/setup-chutes-app.ts
 ```
@@ -69,7 +69,7 @@ sequenceDiagram
     participant App
     participant ChutesIDP as Chutes IDP
     participant ChutesAPI as Chutes API
-    
+
     User->>App: Click "Sign in with Chutes"
     App->>App: Generate PKCE verifier/challenge
     App->>App: Generate state for CSRF protection
@@ -96,14 +96,14 @@ sequenceDiagram
 
 When registering your OAuth app, you specify which permissions (scopes) your app requires:
 
-| Scope | Description | Use Case |
-|-------|-------------|----------|
-| `openid` | OpenID Connect authentication | Required for all apps |
-| `profile` | Access to username, email, name | User profile display |
-| `chutes:invoke` | Make AI API calls | Apps using Chutes AI models |
-| `chutes:invoke:{chute_id}` | Invoke a specific chute only | Limited access to one chute |
-| `account:read` | Read account information | Account dashboards |
-| `billing:read` | Read balance and credits | Display user's balance |
+| Scope                      | Description                     | Use Case                    |
+| -------------------------- | ------------------------------- | --------------------------- |
+| `openid`                   | OpenID Connect authentication   | Required for all apps       |
+| `profile`                  | Access to username, email, name | User profile display        |
+| `chutes:invoke`            | Make AI API calls               | Apps using Chutes AI models |
+| `chutes:invoke:{chute_id}` | Invoke a specific chute only    | Limited access to one chute |
+| `account:read`             | Read account information        | Account dashboards          |
+| `billing:read`             | Read balance and credits        | Display user's balance      |
 
 **Best Practice**: Only request the scopes your application actually needs. Users are more likely to trust apps that request minimal permissions.
 
@@ -127,6 +127,7 @@ curl -X POST "https://api.chutes.ai/idp/apps" \
 ```
 
 You'll receive:
+
 - `client_id` - Your app's public identifier (e.g., `cid_xxx`)
 - `client_secret` - Your app's secret key (e.g., `csc_xxx`) - keep this secure!
 
@@ -179,14 +180,14 @@ curl -H "Authorization: Bearer ACCESS_TOKEN" \
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/idp/authorize` | GET | Start OAuth flow (user redirect) |
-| `/idp/token` | POST | Exchange code for tokens |
-| `/idp/userinfo` | GET | Get authenticated user's profile |
-| `/idp/token/introspect` | POST | Validate a token |
-| `/idp/apps` | POST | Register a new OAuth app |
-| `/users/me` | GET | Get detailed user information |
+| Endpoint                | Method | Description                      |
+| ----------------------- | ------ | -------------------------------- |
+| `/idp/authorize`        | GET    | Start OAuth flow (user redirect) |
+| `/idp/token`            | POST   | Exchange code for tokens         |
+| `/idp/userinfo`         | GET    | Get authenticated user's profile |
+| `/idp/token/introspect` | POST   | Validate a token                 |
+| `/idp/apps`             | POST   | Register a new OAuth app         |
+| `/users/me`             | GET    | Get detailed user information    |
 
 ### OpenID Configuration
 
@@ -252,4 +253,3 @@ For step-by-step implementation guides, see:
 - Review the [Vercel AI SDK Integration](/docs/integrations/vercel-ai-sdk) for using authenticated tokens with AI features
 - Check out the [API Reference](/docs/api-reference/authentication) for detailed endpoint documentation
 - Join our [Discord community](https://discord.gg/wHrXwWkCRz) for support
-

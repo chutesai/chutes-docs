@@ -6,13 +6,13 @@ This guide walks you through implementing "Sign in with Chutes" OAuth in a Next.
 
 The fastest way to add "Sign in with Chutes" to your Next.js app is using the official SDK repository with an AI coding assistant like Cursor:
 
-**[github.com/chutesai/Vibe-Sign-in-with-Chutes](https://github.com/chutesai/Vibe-Sign-in-with-Chutes)**
+**[github.com/chutesai/Sign-in-with-Chutes](https://github.com/chutesai/Sign-in-with-Chutes)**
 
 Simply tell your AI assistant:
 
 ```
 Add "Sign in with Chutes" to my Next.js app using the SDK at:
-https://github.com/chutesai/Vibe-Sign-in-with-Chutes
+https://github.com/chutesai/Sign-in-with-Chutes
 ```
 
 The AI will copy the integration files, set up routes, and configure your app automatically.
@@ -23,8 +23,8 @@ Alternatively, use the setup wizard directly:
 
 ```bash
 # Clone and set up
-git clone https://github.com/chutesai/Vibe-Sign-in-with-Chutes.git
-cd Vibe-Sign-in-with-Chutes
+git clone https://github.com/chutesai/Sign-in-with-Chutes.git
+cd Sign-in-with-Chutes
 npm install
 
 # Run the interactive setup wizard
