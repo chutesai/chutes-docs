@@ -105,6 +105,7 @@ Learn more about our [Security Architecture](core-concepts/security-architecture
 Chutes integrates with popular AI frameworks to make development easier:
 
 - 🔗 **[Vercel AI SDK](integrations/vercel-ai-sdk)** - Use Chutes with the Vercel AI SDK for streaming, tool calling, and more
+- 🔐 **[Sign in with Chutes](integrations/sign-in-with-chutes/)** - Add OAuth authentication to let users sign in with their Chutes account
 
 ## Community & Support
 
