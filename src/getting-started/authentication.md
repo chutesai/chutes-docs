@@ -423,7 +423,7 @@ Now that authentication is set up:
 
 - 📖 **Documentation**: [Installation Guide](installation)
 - 💬 **Discord**: [Community Support](https://discord.gg/wHrXwWkCRz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes/issues)
 - 📧 **Support**: `support@chutes.ai`
 
 ---

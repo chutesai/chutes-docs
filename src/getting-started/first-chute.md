@@ -582,7 +582,7 @@ Now that you understand the fundamentals, explore more advanced topics:
 
 - 📖 **Documentation**: Continue with advanced guides
 - 💬 **Discord**: [Join our community](https://discord.gg/wHrXwWkCRz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes/issues)
 - 📧 **Support**: `support@chutes.ai`
 
 ---

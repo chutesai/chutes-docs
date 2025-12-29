@@ -280,7 +280,7 @@ A: Check the logs in the [Chutes Dashboard](https://chutes.ai) or use the CLI: `
 
 - 📖 **Detailed Guides**: Continue with [Your First Custom Chute](first-chute)
 - 💬 **Community**: [Join our Discord](https://discord.gg/wHrXwWkCRz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/rayonlabs/chutes/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes/issues)
 - 📧 **Support**: `support@chutes.ai`
 
 ---

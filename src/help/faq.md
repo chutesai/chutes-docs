@@ -350,7 +350,7 @@ Yes! We offer:
 - **Enterprise pricing**: Custom rates for large usage
 - **Volume discounts**: Automatic discounts at usage tiers
 
-Fill in [this form](https://forms.rayonlabs.ai/chutes-sales) to contact sales.
+Contact `support@chutes.ai` to discuss sales options.
 
 ## Features & Capabilities
 
@@ -692,6 +692,6 @@ image = Image().run([
 - **Community**: Join our [Discord](https://discord.gg/wHrXwWkCRz) for community support
 - **Documentation**: Check our [comprehensive docs](/docs)
 - **Support**: Email `support@chutes.ai` for technical assistance
-- **Sales**: Fill in this form: [Form](https://forms.rayonlabs.ai/chutes-sales)
+- **Sales**: Contact `support@chutes.ai`
 
 We're constantly updating this FAQ based on user feedback. If you have a question not covered here, please let us know!

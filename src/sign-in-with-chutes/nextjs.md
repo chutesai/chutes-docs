@@ -898,7 +898,7 @@ Ensure your callback URL matches the domain where cookies are set. In developmen
 
 ## Next Steps
 
-- Review the [Sign in with Chutes Overview](./index) for OAuth concepts
+- Review the [Sign in with Chutes Overview](overview) for OAuth concepts
 - Explore the [Vercel AI SDK Integration](/docs/integrations/vercel-ai-sdk) for AI features
 - Join our [Discord community](https://discord.gg/wHrXwWkCRz) for support
 

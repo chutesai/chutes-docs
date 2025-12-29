@@ -23,7 +23,7 @@ pip install chutes
 If you want the latest development features:
 
 ```bash
-git clone https://github.com/rayonlabs/chutes.git
+git clone https://github.com/chutesai/chutes.git
 cd chutes
 pip install -e .
 ```
@@ -210,7 +210,7 @@ For PyCharm users:
 If you encounter issues:
 
 1. Check the [FAQ](../help/faq)
-2. Search existing [GitHub issues](https://github.com/rayonlabs/chutes/issues)
+2. Search existing [GitHub issues](https://github.com/chutesai/chutes/issues)
 3. Join our [Discord community](https://discord.gg/wHrXwWkCRz)
 4. Email `support@chutes.ai`
 
