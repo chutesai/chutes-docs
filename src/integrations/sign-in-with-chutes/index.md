@@ -12,6 +12,53 @@ Traditional API key authentication works well for server-side applications, but 
 - **Security**: No API keys stored in client-side code
 - **Trust**: Users see exactly what permissions they're granting
 
+## Official SDK Repository
+
+The fastest way to add "Sign in with Chutes" to your application is using the official SDK repository:
+
+**[github.com/chutesai/Vibe-Sign-in-with-Chutes](https://github.com/chutesai/Vibe-Sign-in-with-Chutes)**
+
+This repository is designed for **vibe coding** with AI assistants like Cursor, Windsurf, or GitHub Copilot. Simply point your AI assistant to the repository, and it can:
+
+- Copy the integration files into your project
+- Set up the OAuth flow automatically
+- Configure environment variables
+- Add sign-in components to your UI
+
+### Using with AI Coding Assistants
+
+When working with an AI coding assistant, you can reference the SDK repository directly:
+
+```
+Add "Sign in with Chutes" to my app using the SDK at:
+https://github.com/chutesai/Vibe-Sign-in-with-Chutes
+```
+
+The repository includes:
+
+| Directory | Contents |
+|-----------|----------|
+| `packages/nextjs/` | Copy-paste integration files for Next.js |
+| `scripts/` | Setup wizard and OAuth app registration scripts |
+| `examples/nextjs-minimal/` | Working demo application |
+| `docs/` | Framework-specific guides and troubleshooting |
+
+### Manual Quick Start
+
+If you prefer a manual approach:
+
+```bash
+# Clone the repository
+git clone https://github.com/chutesai/Vibe-Sign-in-with-Chutes.git
+
+# Install dependencies and run the setup wizard
+cd Vibe-Sign-in-with-Chutes
+npm install
+npx tsx scripts/setup-chutes-app.ts
+```
+
+The setup wizard will guide you through registering your OAuth app and generating credentials.
+
 ## How It Works
 
 Sign in with Chutes implements the OAuth 2.0 Authorization Code flow with PKCE (Proof Key for Code Exchange) for enhanced security.
