@@ -149,5 +149,10 @@ curl -XPOST https://api.chutes.ai/users/change_bt_auth -H "Authorization: <finge
 ```
 When the command completed check your Chutes account from the website and confirm that the hotkey and coldkey match those in your wallet. 
 
-If you encounter any issues with this proccess please contact us at support@chutes.ai or open a ticket with the ? widget in the bottom right corner of every page on the website.
+### Support Resources
+
+- 📖 **Documentation**: [Complete Docs](/docs)
+- 💬 **Discord**: [Community Chat](https://discord.gg/wHrXwWkCRz)
+- 📨 **Support**: [Email](support@chutes.ai)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/chutesai/chutes/issues)
 
