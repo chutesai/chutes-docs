@@ -15,5 +15,5 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CHUTES_WEB_PAT }}
-          repository: rayonlabs/chutes-web
+          repository: chutesai/chutes-web
           event-type: docs_updated
