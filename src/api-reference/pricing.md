@@ -3,15 +3,42 @@
 This section covers all endpoints related to pricing.
 
 
-## Get Quota Unlock Amount
+## Get Daily Revenue Summary
 
-Amount, in USD, of payment history that provides the "free" tier quota.
+Get the summary of daily revenue including paygo, invoiced users, subscriptions and pending private instances.
 
 
-<div class="api-test-widget" data-widget-id="widget_get__quota_unlock_amount"></div>
-<script type="application/json" data-widget-config="widget_get__quota_unlock_amount">{"endpoint":"/quota_unlock_amount","method":"GET","parameters":[],"requestBody":null}</script>
+<div class="api-test-widget" data-widget-id="widget_get__daily_revenue_summary"></div>
+<script type="application/json" data-widget-config="widget_get__daily_revenue_summary">{"endpoint":"/daily_revenue_summary","method":"GET","parameters":[{"name":"days","type":"integer \\| null","required":false,"description":"","in":"query"}],"requestBody":null}</script>
 
-**Endpoint:** `GET /quota_unlock_amount`
+**Endpoint:** `GET /daily_revenue_summary`
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| days | integer \| null | No |  |
+
+
+### Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Successful Response |
+| 422 | Validation Error |
+
+---
+
+## Get Tao Payment Totals
+
+Get the amount (as USD equivalent) of payments made by tao for
+today, the current month, and total.
+
+
+<div class="api-test-widget" data-widget-id="widget_get__payments_summary_tao"></div>
+<script type="application/json" data-widget-config="widget_get__payments_summary_tao">{"endpoint":"/payments/summary/tao","method":"GET","parameters":[],"requestBody":null}</script>
+
+**Endpoint:** `GET /payments/summary/tao`
 
 
 ### Responses
@@ -50,25 +77,6 @@ Get the current compute unit pricing.
 <script type="application/json" data-widget-config="widget_get__pricing">{"endpoint":"/pricing","method":"GET","parameters":[],"requestBody":null}</script>
 
 **Endpoint:** `GET /pricing`
-
-
-### Responses
-
-| Status Code | Description |
-|-------------|-------------|
-| 200 | Successful Response |
-
----
-
-## Get Developer Deposit
-
-Get the USD/tao amount required to enable developer mode.
-
-
-<div class="api-test-widget" data-widget-id="widget_get__developer_deposit"></div>
-<script type="application/json" data-widget-config="widget_get__developer_deposit">{"endpoint":"/developer_deposit","method":"GET","parameters":[],"requestBody":null}</script>
-
-**Endpoint:** `GET /developer_deposit`
 
 
 ### Responses

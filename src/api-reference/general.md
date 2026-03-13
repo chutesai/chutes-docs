@@ -36,3 +36,22 @@ This section covers all endpoints related to general.
 | 200 | Successful Response |
 
 ---
+
+## Openid Configuration Root
+
+OpenID Connect Discovery endpoint.
+
+
+<div class="api-test-widget" data-widget-id="widget_get___well_known_openid_configuration"></div>
+<script type="application/json" data-widget-config="widget_get___well_known_openid_configuration">{"endpoint":"/.well-known/openid-configuration","method":"GET","parameters":[],"requestBody":null}</script>
+
+**Endpoint:** `GET /.well-known/openid-configuration`
+
+
+### Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Successful Response |
+
+---

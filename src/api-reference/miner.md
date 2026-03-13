@@ -195,9 +195,40 @@ This endpoint requires authentication.
 
 
 <div class="api-test-widget" data-widget-id="widget_get__miner_inventory"></div>
-<script type="application/json" data-widget-config="widget_get__miner_inventory">{"endpoint":"/miner/inventory","method":"GET","parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
+<script type="application/json" data-widget-config="widget_get__miner_inventory">{"endpoint":"/miner/inventory","method":"GET","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
 
 **Endpoint:** `GET /miner/inventory`
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| X-Chutes-Hotkey | string \| null | No |  |
+| X-Chutes-Signature | string \| null | No |  |
+| X-Chutes-Nonce | string \| null | No |  |
+| Authorization | string \| null | No |  |
+
+
+### Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Successful Response |
+| 422 | Validation Error |
+
+### Authentication
+
+This endpoint requires authentication.
+
+---
+
+## Metrics
+
+
+<div class="api-test-widget" data-widget-id="widget_get__miner_metrics_"></div>
+<script type="application/json" data-widget-config="widget_get__miner_metrics_">{"endpoint":"/miner/metrics/","method":"GET","parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
+
+**Endpoint:** `GET /miner/metrics/`
 
 ### Parameters
 
@@ -215,13 +246,16 @@ This endpoint requires authentication.
 
 ---
 
-## Metrics
+## List Active Instances
+
+Get all active instances across the platform.
+Used by miners to make informed preemption decisions based on global state.
 
 
-<div class="api-test-widget" data-widget-id="widget_get__miner_metrics_"></div>
-<script type="application/json" data-widget-config="widget_get__miner_metrics_">{"endpoint":"/miner/metrics/","method":"GET","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
+<div class="api-test-widget" data-widget-id="widget_get__miner_active_instances_"></div>
+<script type="application/json" data-widget-config="widget_get__miner_active_instances_">{"endpoint":"/miner/active_instances/","method":"GET","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
 
-**Endpoint:** `GET /miner/metrics/`
+**Endpoint:** `GET /miner/active_instances/`
 
 ### Parameters
 
@@ -281,7 +315,10 @@ This endpoint requires authentication.
 
 ## Get Stats
 
-Get invocation status over different intervals.
+Get miner stats over different intervals based on instance data (matching actual scoring).
+
+Returns instance-based metrics (total_instances, compute_seconds, compute_units, bounty_count)
+which align with how miners are actually scored for validator weights.
 
 
 <div class="api-test-widget" data-widget-id="widget_get__miner_stats"></div>
@@ -354,6 +391,40 @@ Get invocation status over different intervals.
 
 ---
 
+## Get Thrash Cooldowns
+
+Return all chutes where this miner is currently in a thrash cooldown,
+along with when the cooldown expires.
+
+
+<div class="api-test-widget" data-widget-id="widget_get__miner_thrash_cooldowns"></div>
+<script type="application/json" data-widget-config="widget_get__miner_thrash_cooldowns">{"endpoint":"/miner/thrash_cooldowns","method":"GET","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":null}</script>
+
+**Endpoint:** `GET /miner/thrash_cooldowns`
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| X-Chutes-Hotkey | string \| null | No |  |
+| X-Chutes-Signature | string \| null | No |  |
+| X-Chutes-Nonce | string \| null | No |  |
+| Authorization | string \| null | No |  |
+
+
+### Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Successful Response |
+| 422 | Validation Error |
+
+### Authentication
+
+This endpoint requires authentication.
+
+---
+
 ## Get Metagraph
 
 
@@ -368,53 +439,5 @@ Get invocation status over different intervals.
 | Status Code | Description |
 |-------------|-------------|
 | 200 | Successful Response |
-
----
-
-## Get Utilization
-
-
-<div class="api-test-widget" data-widget-id="widget_get__miner_utilization"></div>
-<script type="application/json" data-widget-config="widget_get__miner_utilization">{"endpoint":"/miner/utilization","method":"GET","parameters":[{"name":"hotkey","type":"string \\| null","required":false,"description":"","in":"query"}],"requestBody":null}</script>
-
-**Endpoint:** `GET /miner/utilization`
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| hotkey | string \| null | No |  |
-
-
-### Responses
-
-| Status Code | Description |
-|-------------|-------------|
-| 200 | Successful Response |
-| 422 | Validation Error |
-
----
-
-## Get Utilization Instances
-
-
-<div class="api-test-widget" data-widget-id="widget_get__miner_utilization_instances"></div>
-<script type="application/json" data-widget-config="widget_get__miner_utilization_instances">{"endpoint":"/miner/utilization_instances","method":"GET","parameters":[{"name":"hotkey","type":"string \\| null","required":false,"description":"","in":"query"}],"requestBody":null}</script>
-
-**Endpoint:** `GET /miner/utilization_instances`
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| hotkey | string \| null | No |  |
-
-
-### Responses
-
-| Status Code | Description |
-|-------------|-------------|
-| 200 | Successful Response |
-| 422 | Validation Error |
 
 ---

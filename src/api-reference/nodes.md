@@ -37,7 +37,7 @@ Add nodes/GPUs to inventory.
 
 
 <div class="api-test-widget" data-widget-id="widget_post__nodes_"></div>
-<script type="application/json" data-widget-config="widget_post__nodes_">{"endpoint":"/nodes/","method":"POST","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":{"type":"object","properties":{"server_id":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Server Id"},"nodes":{"items":{"$ref":"#/components/schemas/NodeArgs"},"type":"array","title":"Nodes"}},"required":["nodes"]}}</script>
+<script type="application/json" data-widget-config="widget_post__nodes_">{"endpoint":"/nodes/","method":"POST","requiresAuth":true,"parameters":[{"name":"X-Chutes-Hotkey","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Signature","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"X-Chutes-Nonce","type":"string \\| null","required":false,"description":"","in":"header"},{"name":"Authorization","type":"string \\| null","required":false,"description":"","in":"header"}],"requestBody":{"type":"object","properties":{"server_id":{"type":"string","title":"Server Id"},"server_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Server Name"},"nodes":{"items":{"$ref":"#/components/schemas/NodeArgs"},"type":"array","title":"Nodes"}},"required":["server_id","nodes"]}}</script>
 
 **Endpoint:** `POST /nodes/`
 
@@ -55,7 +55,8 @@ Add nodes/GPUs to inventory.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| server_id | string \| null | No |  |
+| server_id | string | Yes |  |
+| server_name | string \| null | No |  |
 | nodes | NodeArgs[] | Yes |  |
 
 
